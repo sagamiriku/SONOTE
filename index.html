@@ -6,28 +6,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-
 <link href="https://fonts.googleapis.com/css2?family=Sawarabi+Gothic:wght@700&family=Jost:wght@900&display=swap" rel="stylesheet">
 <style>
-/* --- 既存のデザインを継承しつつログイン用スタイルを追加 --- */
 body{margin:0;font-family:"Sawarabi Gothic";font-weight:700;background:#fff;overflow:hidden;}
-header{
-    font-family:"Jost"; font-size:34px; padding:12px 24px; border-bottom:1px solid #eee; background:#fff;
-    display: flex; align-items: baseline; gap: 10px;
-}
+header{font-family:"Jost"; font-size:34px; padding:12px 24px; border-bottom:1px solid #eee; background:#fff; display: flex; align-items: baseline; gap: 10px;}
 .sync-status { font-size: 10px; font-family: "Sawarabi Gothic"; padding: 2px 6px; border-radius: 4px; background: #f0f0f0; color: #888; transform: translateY(-2px); }
-
-/* ログイン画面のオーバーレイ */
-#auth-overlay {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-    background: #fff; z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center;
-}
-.login-btn { 
-    background: #4285F4; color: #fff; border: none; padding: 12px 24px; border-radius: 8px; 
-    font-size: 16px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(66,133,244,0.3);
-}
-
-/* 以下、既存のスタイル（省略せずにそのまま保持してください） */
+#auth-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.login-btn { background: #4285F4; color: #fff; border: none; padding: 12px 24px; border-radius: 8px; font-size: 16px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(66,133,244,0.3); }
 .layout{display:flex;height:calc(100vh - 70px);width: 100vw;}
 .left{width:15%; min-width:180px; border-right:1px solid #eee; padding:16px; background:#fafafa; overflow:auto; box-sizing: border-box;}
 .main{width:50%; min-width:350px; padding:28px; overflow:auto; border-right:1px solid #eee; box-sizing: border-box;}
@@ -66,14 +51,11 @@ textarea,input{width:100%;border:2px solid #000;border-radius:12px;padding:8px;m
 
 <div id="auth-overlay">
     <header style="border:none; font-size: 48px;">SONOTE</header>
-    <p style="margin-bottom: 24px; color: #666;">Cloud Sync Enabled</p>
+    <p style="margin-bottom: 24px; color: #666;">Secure Cloud Synced</p>
     <button class="login-btn" onclick="login()">Googleアカウントでログイン</button>
 </div>
 
-<header>
-    SONOTE
-    <span id="header-status" class="sync-status">Wait...</span>
-</header>
+<header>SONOTE<span id="header-status" class="sync-status">Wait...</span></header>
 
 <div class="layout">
     <div class="left"><div class="panel"><button class="addBtn" onclick="addCategory()">＋追加</button></div><div id="catList"></div></div>
@@ -100,22 +82,14 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
-
 let docRef = null;
 
-// ログイン関数を公開
-window.login = () => {
-    signInWithPopup(auth, provider).catch(err => alert("Login Error: " + err.message));
-};
+window.login = () => signInWithPopup(auth, provider).catch(err => alert(err.message));
 
-// 認証状態の監視
 onAuthStateChanged(auth, async (user) => {
     if (user) {
-        // ログイン成功
         document.getElementById('auth-overlay').style.display = 'none';
-        docRef = doc(db, "users", user.uid); // ユーザー固有のIDを使用
-        
-        // データの初期読み込みと監視を開始
+        docRef = doc(db, "users", user.uid);
         onSnapshot(docRef, (docSnap) => {
             if (docSnap.exists()) {
                 const cloudData = docSnap.data().sonoteData;
@@ -126,36 +100,25 @@ onAuthStateChanged(auth, async (user) => {
                 }
             }
         });
-
-        // 初回ロード（前のデータがあれば移行）
         const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-            data = docSnap.data().sonoteData || [];
-        } else {
-            const local = localStorage.getItem("sonote_emoji_v79");
-            if (local) { data = JSON.parse(local); await window.save(); }
-        }
+        if (docSnap.exists()) { data = docSnap.data().sonoteData || []; }
         render();
     } else {
-        // 未ログイン
         document.getElementById('auth-overlay').style.display = 'flex';
     }
 });
 
-// 保存関数
 window.save = async function() {
     if (!docRef) return;
     try {
         await setDoc(docRef, { sonoteData: data }, { merge: true });
         document.getElementById('header-status').innerText = "Cloud Synced";
-    } catch (e) {
-        document.getElementById('header-status').innerText = "Sync Error";
-    }
+    } catch (e) { document.getElementById('header-status').innerText = "Sync Error"; }
 };
 </script>
 
 <script>
-/* --- 既存のアプリロジック（そのまま） --- */
+/* --- 以前抜け落ちていた重要ロジック --- */
 let data = [];
 let activeCatId = null;
 let addingItemFolderId = null;
@@ -163,8 +126,90 @@ let activePickerId = null;
 let customAreaVisible = false;
 const EMOJI_LIST = ["📝","📁","👤","💡","🔥","⭐","🔑","🌈","🛡️","🧪","📜","🗺️","🎭","💎","⌛"];
 
-// ... (render関数、addCategory、その他ロジック全量が入りますが省略なしでコピーしてください) ...
-// ※文字数制限により省略して見える場合がありますが、以前のrenderロジックをすべて含めてください。
+function closeAllPickers(){ if(activePickerId !== null) { activePickerId = null; customAreaVisible = false; render(); } }
+function togglePicker(e, id){ e.stopPropagation(); activePickerId = (activePickerId === id) ? null : id; customAreaVisible = false; render(); }
+function toggleCustomArea(){ customAreaVisible = !customAreaVisible; render(); }
+function setEmoji(type, id, emoji){
+    if(!emoji) return;
+    if(type === 'cat'){
+        const target = data.find(c => c.id === id);
+        if(target) target.emoji = emoji;
+    } else {
+        const cat = data.find(c => c.id === activeCatId);
+        if(cat){
+            const folder = cat.folders.find(f => f.id === id);
+            if(folder) folder.emoji = emoji;
+        }
+    }
+    activePickerId = null; customAreaVisible = false; save(); render();
+}
+
+function getEmojiPickerHtml(type, targetId, currentEmoji){
+    return `<div class="emoji-picker" onclick="event.stopPropagation()">
+        ${EMOJI_LIST.map(e => `<div class="emoji-item" onclick="setEmoji('${type}', ${targetId}, '${e}')">${e}</div>`).join("")}
+        <div class="emoji-item" onclick="toggleCustomArea()">＋</div>
+        ${customAreaVisible ? `<div class="custom-emoji-area"><input type="text" class="custom-input" maxlength="4" placeholder="Enter" onkeydown="if(event.key==='Enter') setEmoji('${type}', ${targetId}, this.value)" autofocus></div>` : ''}
+    </div>`;
+}
+
+function render(){
+    document.getElementById("catList").innerHTML = data.map((c, cIdx)=>`
+        <div class="cat-item-wrapper">
+            <button class="mainBtn ${c.id===activeCatId?'active-cat':''}" onclick="activeCatId=${c.id}; render();" ondblclick="event.stopPropagation(); data[${cIdx}].editing=true; render();">
+                <span class="emoji-disp" onclick="togglePicker(event, ${c.id})">${c.emoji || '📝'}</span>
+                ${activePickerId === c.id ? getEmojiPickerHtml('cat', c.id, c.emoji) : ''}
+                ${c.editing?`<input class="inlineEdit" value="${c.name}" onkeydown="if(event.key==='Enter'){data[${cIdx}].name=this.value; data[${cIdx}].editing=false; save(); render();}" onblur="data[${cIdx}].name=this.value; data[${cIdx}].editing=false; save(); render();" autofocus onclick="event.stopPropagation()">`:c.name}
+                <div class="actionGroup"><div class="miniBtn" onclick="event.stopPropagation(); data = data.filter(x=>x.id!==${c.id}); if(activeCatId===${c.id}) activeCatId=null; save(); render();">🗑</div></div>
+            </button>
+            <div class="move-btns">
+                <button class="arrowBtn" onclick="let t=data[${cIdx}]; data[${cIdx}]=data[${cIdx}-1]; data[${cIdx}-1]=t; save(); render();" ${cIdx===0?'disabled':''}>▲</button>
+                <button class="arrowBtn" onclick="let t=data[${cIdx}]; data[${cIdx}]=data[${cIdx}+1]; data[${cIdx}+1]=t; save(); render();" ${cIdx===data.length-1?'disabled':''}>▼</button>
+            </div>
+        </div>`).join("");
+
+    const mainContainer = document.getElementById("main");
+    const glossaryContainer = document.getElementById("glossary");
+    const cIdx = data.findIndex(c => c.id === activeCatId);
+    if(cIdx === -1){ mainContainer.innerHTML="<p style='color:#ccc;text-align:center;'>カテゴリを選択</p>"; glossaryContainer.innerHTML=""; return; }
+    let cat = data[cIdx];
+
+    mainContainer.innerHTML = `
+        <div class="active-cat-title">${cat.name}</div>
+        <div class="panel">
+            <button class="addBtn" onclick="data[${cIdx}].folders.push({id:Date.now(),type:'char',name:'キャラクター',emoji:'👤',editing:false,collapsed:false,notes:[],items:[]}); save(); render();">＋キャラ</button>
+            <button class="addBtn" onclick="data[${cIdx}].folders.push({id:Date.now(),type:'folder',name:'フォルダ',emoji:'📁',editing:false,collapsed:false,notes:[],items:[]}); save(); render();">＋フォルダ</button>
+        </div>
+        ${cat.folders.map((f, fIdx)=>`
+            <div class="folder">
+                <button class="folderBtn" onclick="data[${cIdx}].folders[${fIdx}].collapsed=!data[${cIdx}].folders[${fIdx}].collapsed; render();" ondblclick="event.stopPropagation(); data[${cIdx}].folders[${fIdx}].editing=true; render();">
+                    <span class="emoji-disp" onclick="togglePicker(event, ${f.id})">${f.emoji || (f.type==='char'?'👤':'📁')}</span>
+                    ${activePickerId === f.id ? getEmojiPickerHtml('folder', f.id, f.emoji) : ''}
+                    ${f.editing?`<input class="inlineEdit" value="${f.name}" onkeydown="if(event.key==='Enter'){data[${cIdx}].folders[${fIdx}].name=this.value; data[${cIdx}].folders[${fIdx}].editing=false; save(); render();}" onblur="data[${cIdx}].folders[${fIdx}].name=this.value; data[${cIdx}].folders[${fIdx}].editing=false; save(); render();" autofocus onclick="event.stopPropagation()">`:f.name}
+                    <div class="actionGroup"><div class="miniBtn" onclick="event.stopPropagation(); data[${cIdx}].folders.splice(${fIdx},1); save(); render();">🗑</div></div>
+                </button>
+                <div style="display:${f.collapsed?'none':'block'};">
+                    <textarea id="note-input-${f.id}" placeholder="メモ..."></textarea>
+                    <button class="saveNoteBtn" onclick="const v=document.getElementById('note-input-${f.id}').value; if(v){data[${cIdx}].folders[${fIdx}].notes.push({id:Date.now(),text:v,open:false,editing:false}); save(); render();}">保存</button>
+                    <div style="margin-top:8px;">${f.notes.map((n, nIdx)=>`
+                        <div class="fullContent-wrapper">
+                            ${n.editing ? `<textarea onblur="data[${cIdx}].folders[${fIdx}].notes[${nIdx}].editing=false; data[${cIdx}].folders[${fIdx}].notes[${nIdx}].text=this.value; save(); render();" autofocus>${n.text}</textarea>` :
+                            (!n.open?`<button class="previewBtn" onclick="data[${cIdx}].folders[${fIdx}].notes[${nIdx}].open=true; render();">${n.text.slice(0,30)}...</button>`:`<div class="fullContent" onclick="data[${cIdx}].folders[${fIdx}].notes[${nIdx}].open=false; render();">${n.text}</div>`)}
+                            <div class="actionGroup"><div class="miniBtn" onclick="event.stopPropagation(); data[${cIdx}].folders[${fIdx}].notes.splice(${nIdx},1); save(); render();">🗑</div><div class="miniBtn" onclick="event.stopPropagation(); data[${cIdx}].folders[${fIdx}].notes[${nIdx}].editing=true; render();">✏️</div></div>
+                        </div>`).join("")}</div>
+                    ${f.type==='char'?`<div style="margin-top:16px; border-top:1px solid #ddd; padding-top:10px;"><button class="addBtn" onclick="addingItemFolderId=(addingItemFolderId===${f.id}?null:${f.id}); render();">＋詳細</button>
+                        ${addingItemFolderId===f.id?`<div style="background:#eee;padding:10px;border-radius:12px;margin:8px 0;"><input id="new-name-${f.id}" placeholder="名前"><textarea id="new-text-${f.id}" placeholder="説明"></textarea><button class="saveNoteBtn" onclick="const n=document.getElementById('new-name-${f.id}').value; const t=document.getElementById('new-text-${f.id}').value; data[${cIdx}].folders[fIdx].items.push({id:Date.now(),name:n,text:t,open:false}); addingItemFolderId=null; save(); render();">保存</button></div>`:''}
+                        <div class="charRow">${f.items.map((i, iIdx)=>`<div class="charItem"><button class="nameBtn" onclick="i.open=!i.open; render();">${i.name}<div class="actionGroup"><div class="miniBtn" onclick="event.stopPropagation(); f.items.splice(${iIdx},1); save(); render();">🗑</div></div></button>${i.open?`<div class="fullContent">${i.text}</div>`:''}</div>`).join("")}</div></div>`:""}
+                </div>
+            </div>`).join("")}`;
+
+    if(!cat.glossary) cat.glossary = [];
+    glossaryContainer.innerHTML = `<div style="font-size:20px;margin-bottom:16px;border-bottom:2px solid #eee;padding-bottom:8px;">📖 用語集</div>
+        <div style="background:#eee;padding:10px;border-radius:12px;margin-bottom:16px;"><input id="new-term-name" placeholder="用語名"><textarea id="new-term-desc" placeholder="説明" style="height:50px;"></textarea><button class="addBtn" style="width:100%;margin-top:8px;" onclick="const n=document.getElementById('new-term-name').value; const d=document.getElementById('new-term-desc').value; if(n){cat.glossary.push({id:Date.now(),name:n,desc:d,open:false}); save(); render();}">追加</button></div>
+        ${cat.glossary.map((t, tIdx)=>`<div class="term-wrapper"><button class="termBtn" onclick="t.open=!t.open; render();">${t.name}<div class="actionGroup"><div class="miniBtn" onclick="event.stopPropagation(); cat.glossary.splice(${tIdx},1); save(); render();">🗑</div></div></button>${t.open?`<div class="term-desc">${t.desc}</div>`:''}</div>`).join("")}`;
+}
+
+function addCategory(){ data.push({id:Date.now(),name:"カテゴリ",emoji:"📝",folders:[],glossary:[]}); save(); render(); }
+function initDragOver(e){ e.preventDefault(); } 
 </script>
 </body>
 </html>
