@@ -1,15 +1,34 @@
-<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><title>SONOTE - Cloud Edition</title><link href="https://fonts.googleapis.com/css2?family=Sawarabi+Gothic:wght@700&family=Jost:wght@900&display=swap" rel="stylesheet"><style>/* --- スタイルは完全に維持 --- */body{margin:0;font-family:"Sawarabi Gothic";font-weight:700;background:#fff;overflow:hidden;}header { font-family: "Jost"; font-size: 34px; padding: 12px 24px; border-bottom: 1px solid #eee; background: #fff; display: flex; align-items: baseline; gap: 10px; }.sync-status { font-size: 10px; font-family: "Sawarabi Gothic"; padding: 2px 6px; border-radius: 4px; background: #f0f0f0; color: #888; font-weight: 700; line-height: 1; transform: translateY(-2px); }.layout{display:flex;height:calc(100vh - 70px);width: 100vw;}.left{width:15%; min-width:180px; border-right:1px solid #eee; padding:16px; background:#fafafa; overflow:auto; box-sizing: border-box;}.main{width:50%; min-width:350px; padding:28px; overflow:auto; border-right:1px solid #eee; box-sizing: border-box;}.right{width:35%; min-width:250px; padding:16px; background:#fcfcfc; overflow:auto; box-sizing: border-box;}.active-cat-title { text-align: left; font-size: 28px; margin-bottom: 24px; color: #333; border-left: 8px solid #f6f6f6; padding: 0 0 0 16px; line-height: 1.2; }.panel{background:#eee;border-radius:14px;padding:10px;margin-bottom:12px;display:flex;gap:8px; flex-wrap: wrap;}.addBtn{background:#555;color:#fff;border:none;border-radius:10px;padding:8px 12px;font-weight:700;cursor:pointer;}.mainBtn, .nameBtn, .saveNoteBtn, .folderBtn, .previewBtn { background:#fff; border:2px solid #000; border-radius:12px; padding:8px 14px; font-size:14px; font-weight:700; cursor:pointer; position:relative; text-align:left; font-family:inherit; display: flex; align-items: center; gap: 8px; word-break: break-all; white-space: normal; overflow-wrap: break-word; }.mainBtn { padding-right: 34px; margin: 4px; width: calc(100% - 8px); box-sizing: border-box;}.emoji-disp { font-size: 1.2em; cursor: pointer; transition: 0.2s; padding: 2px; border-radius: 4px; flex-shrink: 0; }.emoji-picker { position: absolute; top: 40px; left: 0; background: #fff; border: 2px solid #000; border-radius: 12px; padding: 8px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }.emoji-item { cursor: pointer; font-size: 18px; text-align: center; padding: 4px; border-radius: 6px; }.custom-emoji-area { grid-column: span 4; border-top: 1px solid #eee; padding-top: 8px; margin-top: 4px; display: flex; justify-content: center; }.custom-emoji-area input { width: 100% !important; padding: 6px !important; margin: 0 !important; text-align: center; font-size: 14px; height: 32px; border: 2px solid #ddd !important; }.actionGroup { position:absolute; top:-8px; right:-8px; display:flex; flex-direction:column; gap:2px; opacity:0; transition:0.2s; z-index:20; }.mainBtn:hover .actionGroup, .nameBtn:hover .actionGroup, .folderBtn:hover .actionGroup, .previewBtn:hover .actionGroup, .fullContent-wrapper:hover .actionGroup, .term-wrapper:hover .actionGroup, .term-desc:hover .actionGroup, .fullContent:hover .actionGroup { opacity:1; }.miniBtn { padding:2px 6px; border:2px solid #000; background:#fff; border-radius:6px; font-size:14px; cursor:pointer; line-height:1.2; }.active-cat { background: #f6f6f6 !important; border-color: #000; }.cat-item-wrapper { position: relative; margin-bottom: 12px; }.move-btns { display: flex; gap: 6px; padding-left: 8px; margin-top: 2px; }.arrowBtn { background: transparent; border: none; cursor: pointer; font-size: 16px; padding: 0 4px; color: #aaa; transition: 0.2s; }.folder{background:#f6f6f6; border:none; border-radius:16px; padding:14px; margin-bottom:16px; display: block; overflow: visible; cursor: grab;}.folderBtn { width: fit-content; max-width: 100%; display: flex; padding-right: 34px; margin-bottom:10px;}.nameBtn { width: fit-content; padding-right: 34px; display: inline-flex; align-items: center; max-width: 100%;}textarea,input{width:100%;border:2px solid #000;border-radius:12px;padding:8px;margin-top:6px;box-sizing:border-box;font-family:inherit;font-weight:700;}.inlineEdit { border:2px solid #000; border-radius:8px; padding:4px; font-weight:700; width:80%; margin:0; }.fullContent-wrapper { position: relative; width: 100%; margin: 8px 0; }.fullContent { font-size:14px; white-space:pre-wrap; border-left: 4px solid #000; padding: 4px 34px 4px 16px; cursor: pointer; min-height:1.2em; position:relative;}.previewBtn { width:100%; margin-top:4px; padding:8px 34px 8px 12px; font-size:13px; border:none; text-align: left;}.charRow{display:flex; flex-direction: column; gap:12px; margin-top:12px;}.charItem { position: relative; margin-bottom: 10px; }.term-wrapper { margin-bottom: 12px; width: 100%; box-sizing: border-box; border-bottom: 1px solid #f0f0f0; padding-bottom: 8px; display: block; }.termBtn { width: auto; border: none; background: transparent; border-radius: 0; padding: 4px 0px; font-size: 15px; color: #333; display: block; text-align: left; }.term-desc { font-size: 14px; white-space: pre-wrap; border-left: 4px solid #000; padding: 0px 12px; margin: 4px 0 0 0; cursor: pointer; position: relative; line-height: 1.4; color: #444; font-weight: 700; text-align: left; display: block; width: fit-content; max-width: 100%; word-break: break-all; min-height: 0; }</style></head>
+<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><title>SONOTE - Cloud Edition</title><link href="https://fonts.googleapis.com/css2?family=Sawarabi+Gothic:wght@700&family=Jost:wght@900&display=swap" rel="stylesheet"><style>/* --- スタイルは完全に維持（コンパクト設定含む） --- */body{margin:0;font-family:"Sawarabi Gothic";font-weight:700;background:#fff;overflow:hidden;}header { font-family: "Jost"; font-size: 34px; padding: 12px 24px; border-bottom: 1px solid #eee; background: #fff; display: flex; align-items: baseline; gap: 10px; }.sync-status { font-size: 10px; font-family: "Sawarabi Gothic"; padding: 2px 6px; border-radius: 4px; background: #f0f0f0; color: #888; font-weight: 700; line-height: 1; transform: translateY(-2px); }.layout{display:flex;height:calc(100vh - 70px);width: 100vw;}.left{width:15%; min-width:180px; border-right:1px solid #eee; padding:16px; background:#fafafa; overflow:auto; box-sizing: border-box;}.main{width:50%; min-width:350px; padding:28px; overflow:auto; border-right:1px solid #eee; box-sizing: border-box;}.right{width:35%; min-width:250px; padding:16px; background:#fcfcfc; overflow:auto; box-sizing: border-box;}.active-cat-title { text-align: left; font-size: 28px; margin-bottom: 24px; color: #333; border-left: 8px solid #f6f6f6; padding: 0 0 0 16px; line-height: 1.2; }.panel{background:#eee;border-radius:14px;padding:10px;margin-bottom:12px;display:flex;gap:8px; flex-wrap: wrap;}.addBtn{background:#555;color:#fff;border:none;border-radius:10px;padding:8px 12px;font-weight:700;cursor:pointer;}.mainBtn, .nameBtn, .saveNoteBtn, .folderBtn, .previewBtn { background:#fff; border:2px solid #000; border-radius:12px; padding:8px 14px; font-size:14px; font-weight:700; cursor:pointer; position:relative; text-align:left; font-family:inherit; display: flex; align-items: center; gap: 8px; word-break: break-all; white-space: normal; overflow-wrap: break-word; }.mainBtn { padding-right: 34px; margin: 4px; width: calc(100% - 8px); box-sizing: border-box;}.emoji-disp { font-size: 1.2em; cursor: pointer; transition: 0.2s; padding: 2px; border-radius: 4px; flex-shrink: 0; }.emoji-picker { position: absolute; top: 40px; left: 0; background: #fff; border: 2px solid #000; border-radius: 12px; padding: 8px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }.emoji-item { cursor: pointer; font-size: 18px; text-align: center; padding: 4px; border-radius: 6px; }.custom-emoji-area { grid-column: span 4; border-top: 1px solid #eee; padding-top: 8px; margin-top: 4px; display: flex; justify-content: center; }.custom-emoji-area input { width: 100% !important; padding: 6px !important; margin: 0 !important; text-align: center; font-size: 14px; height: 32px; border: 2px solid #ddd !important; }.actionGroup { position:absolute; top:-8px; right:-8px; display:flex; flex-direction:column; gap:2px; opacity:0; transition:0.2s; z-index:20; }.mainBtn:hover .actionGroup, .nameBtn:hover .actionGroup, .folderBtn:hover .actionGroup, .previewBtn:hover .actionGroup, .fullContent-wrapper:hover .actionGroup, .term-wrapper:hover .actionGroup, .term-desc:hover .actionGroup, .fullContent:hover .actionGroup { opacity:1; }.miniBtn { padding:2px 6px; border:2px solid #000; background:#fff; border-radius:6px; font-size:14px; cursor:pointer; line-height:1.2; }.active-cat { background: #f6f6f6 !important; border-color: #000; }.cat-item-wrapper { position: relative; margin-bottom: 12px; }.move-btns { display: flex; gap: 6px; padding-left: 8px; margin-top: 2px; }.arrowBtn { background: transparent; border: none; cursor: pointer; font-size: 16px; padding: 0 4px; color: #aaa; transition: 0.2s; }.folder{background:#f6f6f6; border:none; border-radius:16px; padding:14px; margin-bottom:16px; display: block; overflow: visible; cursor: grab;}.folderBtn { width: fit-content; max-width: 100%; display: flex; padding-right: 34px; margin-bottom:10px;}.nameBtn { width: fit-content; padding-right: 34px; display: inline-flex; align-items: center; max-width: 100%;}textarea,input{width:100%;border:2px solid #000;border-radius:12px;padding:8px;margin-top:6px;box-sizing:border-box;font-family:inherit;font-weight:700;}.inlineEdit { border:2px solid #000; border-radius:8px; padding:4px; font-weight:700; width:80%; margin:0; }.fullContent-wrapper { position: relative; width: 100%; margin: 8px 0; }.fullContent { font-size:14px; white-space:pre-wrap; border-left: 4px solid #000; padding: 4px 34px 4px 16px; cursor: pointer; min-height:1.2em; position:relative;}.previewBtn { width:100%; margin-top:4px; padding:8px 34px 8px 12px; font-size:13px; border:none; text-align: left;}.charRow{display:flex; flex-direction: column; gap:12px; margin-top:12px;}.charItem { position: relative; margin-bottom: 10px; }.term-wrapper { margin-bottom: 12px; width: 100%; box-sizing: border-box; border-bottom: 1px solid #f0f0f0; padding-bottom: 8px; display: block; }.termBtn { width: auto; border: none; background: transparent; border-radius: 0; padding: 4px 0px; font-size: 15px; color: #333; display: block; text-align: left; }.term-desc { font-size: 14px; white-space: pre-wrap; border-left: 4px solid #000; padding: 0px 12px; margin: 4px 0 0 0; cursor: pointer; position: relative; line-height: 1.4; color: #444; font-weight: 700; text-align: left; display: block; width: fit-content; max-width: 100%; word-break: break-all; min-height: 0; }</style></head>
 <body onclick="closeAllPickers()">
 <header>SONOTE<span id="header-status" class="sync-status">Connecting...</span></header>
 <div class="layout">
-    <div class="left"><div class="panel"><button class="addBtn" onclick="addCategory()">＋追加</button></div><div id="catList"></div></div>
+    <div class="left"><div class="panel"><button class="addBtn" id="mainAddBtn" onclick="addCategory()">＋追加</button></div><div id="catList"></div></div>
     <div class="main" id="main" ondragover="initDragOver(event)"></div>
     <div class="right" id="glossary"></div>
 </div>
 
+<script>
+/* --- 初期状態とグローバル変数を先に定義 --- */
+window.data = []; 
+let activeCatId = null;
+let addingItemFolderId = null;
+let activePickerId = null;
+let customAreaVisible = false;
+const EMOJI_LIST = ["📝","📁","👤","💡","🔥","⭐","🔑","🌈","🛡️","🧪","📜","🗺️","🎭","💎","⌛"];
+
+// 重い時のためのタイムアウト処置（5秒でConnectingを諦める）
+setTimeout(() => {
+    const status = document.getElementById('header-status');
+    if (status && status.innerText === "Connecting...") {
+        status.innerText = "Sync Offline (Timeout)";
+        window.render(); 
+    }
+}, 5000);
+</script>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, doc, setDoc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, doc, setDoc, onSnapshot, getDoc, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDPYhwYgFtr5pp8PYjtUMfCP541NoAmmcM",
@@ -25,7 +44,11 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const docRef = doc(db, "users", "default_user");
 
-// グローバル関数として登録して、HTMLのonclickから呼べるようにする
+// オフラインでも動くようにローカルキャッシュを有効化
+try {
+    enableIndexedDbPersistence(db);
+} catch (err) { console.warn("Persistence failed"); }
+
 window.save = async function() {
     try {
         await setDoc(docRef, { sonoteData: window.data }, { merge: true });
@@ -44,27 +67,24 @@ onSnapshot(docRef, (docSnap) => {
             document.getElementById('header-status').innerText = "Cloud";
         }
     }
+}, (err) => {
+    document.getElementById('header-status').innerText = "Sync Error";
 });
 
 async function init() {
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
-        window.data = docSnap.data().sonoteData || [];
-    }
+    try {
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+            window.data = docSnap.data().sonoteData || [];
+        }
+    } catch(e) { console.log("Offline start"); }
     window.render();
 }
 init();
 </script>
 
 <script>
-// アプリの状態管理
-window.data = []; 
-let activeCatId = null;
-let addingItemFolderId = null;
-let activePickerId = null;
-let customAreaVisible = false;
-const EMOJI_LIST = ["📝","📁","👤","💡","🔥","⭐","🔑","🌈","🛡️","🧪","📜","🗺️","🎭","💎","⌛"];
-
+/* --- UIレンダリングロジック --- */
 function closeAllPickers(){ if(activePickerId !== null) { activePickerId = null; customAreaVisible = false; render(); } }
 function togglePicker(e, id){ e.stopPropagation(); activePickerId = (activePickerId === id) ? null : id; customAreaVisible = false; render(); }
 function toggleCustomArea(){ customAreaVisible = !customAreaVisible; render(); }
