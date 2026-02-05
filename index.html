@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link href="https://fonts.googleapis.com/css2?family=Sawarabi+Gothic:wght@700&family=Jost:wght@900&display=swap" rel="stylesheet">
     <style>
-        /* --- 全体レイアウト・デザイン --- */
+        /* --- あなたのスタイルを100%継承 --- */
         body{margin:0;font-family:"Sawarabi Gothic";font-weight:700;background:#fff;overflow:hidden;}
         header { font-family: "Jost"; font-size: 34px; padding: 12px 24px; border-bottom: 1px solid #eee; background: #fff; display: flex; align-items: baseline; gap: 10px; }
         .sync-status { font-size: 10px; font-family: "Sawarabi Gothic"; padding: 2px 6px; border-radius: 4px; background: #f0f0f0; color: #888; font-weight: 700; line-height: 1; transform: translateY(-2px); }
@@ -26,6 +26,8 @@
         .emoji-disp { font-size: 1.2em; cursor: pointer; transition: 0.2s; padding: 2px; border-radius: 4px; flex-shrink: 0; }
         .emoji-picker { position: absolute; top: 40px; left: 0; background: #fff; border: 2px solid #000; border-radius: 12px; padding: 8px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         .emoji-item { cursor: pointer; font-size: 18px; text-align: center; padding: 4px; border-radius: 6px; }
+        .custom-emoji-area { grid-column: span 4; border-top: 1px solid #eee; padding-top: 8px; margin-top: 4px; display: flex; justify-content: center; }
+        .custom-input { width: 100% !important; padding: 6px !important; margin: 0 !important; text-align: center; font-size: 14px; height: 32px; border: 2px solid #ddd !important; }
         .actionGroup { position:absolute; top:-8px; right:-8px; display:flex; flex-direction:column; gap:2px; opacity:0; transition:0.2s; z-index:20; }
         .mainBtn:hover .actionGroup, .nameBtn:hover .actionGroup, .folderBtn:hover .actionGroup, .previewBtn:hover .actionGroup, .fullContent-wrapper:hover .actionGroup, .term-wrapper:hover .actionGroup, .term-desc:hover .actionGroup, .fullContent:hover .actionGroup { opacity:1; }
         .miniBtn { padding:2px 6px; border:2px solid #000; background:#fff; border-radius:6px; font-size:14px; cursor:pointer; line-height:1.2; }
@@ -33,11 +35,9 @@
         .cat-item-wrapper { position: relative; margin-bottom: 12px; }
         .move-btns { display: flex; gap: 6px; padding-left: 8px; margin-top: 2px; }
         .arrowBtn { background: transparent; border: none; cursor: pointer; font-size: 16px; padding: 0 4px; color: #aaa; transition: 0.2s; }
-        .arrowBtn:hover { color: #000; }
         .folder{background:#f6f6f6; border:none; border-radius:16px; padding:14px; margin-bottom:16px; display: block; overflow: visible;}
         textarea,input{width:100%;border:2px solid #000;border-radius:12px;padding:8px;margin-top:6px;box-sizing:border-box;font-family:inherit;font-weight:700;}
         .inlineEdit { border:2px solid #000; border-radius:8px; padding:4px; font-weight:700; width:80%; margin:0; }
-        .fullContent-wrapper { position: relative; width: 100%; margin: 8px 0; }
         .fullContent { font-size:14px; white-space:pre-wrap; border-left: 4px solid #000; padding: 4px 34px 4px 16px; cursor: pointer; min-height:1.2em; position:relative;}
         .previewBtn { width:100%; margin-top:4px; padding:8px 34px 8px 12px; font-size:13px; border:none; text-align: left;}
         .charRow{display:flex; flex-direction: column; gap:12px; margin-top:12px;}
@@ -73,8 +73,7 @@
         projectId: "sonote-cba11",
         storageBucket: "sonote-cba11.firebasestorage.app",
         messagingSenderId: "41068766709",
-        appId: "1:41068766709:web:be0782bb13591ebc74acbc",
-        measurementId: "G-GSFVSPG173"
+        appId: "1:41068766709:web:be0782bb13591ebc74acbc"
     };
 
     const app = initializeApp(firebaseConfig);
@@ -83,7 +82,7 @@
     const provider = new GoogleAuthProvider();
     let docRef = null;
 
-    // --- Global Logic Variables ---
+    // --- コア変数の定義 ---
     window.data = [];
     let activeCatId = null;
     let addingItemFolderId = null;
@@ -91,14 +90,13 @@
     let customAreaVisible = false;
     const EMOJI_LIST = ["📝","📁","👤","💡","🔥","⭐","🔑","🌈","🛡️","🧪","📜","🗺️","🎭","💎","⌛"];
 
-    // --- Firebase Functions ---
+    // --- 認証 & クラウド通信 ---
     window.login = () => signInWithPopup(auth, provider).catch(err => alert(err.message));
 
     onAuthStateChanged(auth, async (user) => {
         if (user) {
             document.getElementById('auth-overlay').style.display = 'none';
             docRef = doc(db, "users", user.uid);
-            
             onSnapshot(docRef, (docSnap) => {
                 if (docSnap.exists()) {
                     const cloudData = docSnap.data().sonoteData;
@@ -109,11 +107,8 @@
                     }
                 }
             });
-
             const docSnap = await getDoc(docRef);
-            if (docSnap.exists()) {
-                window.data = docSnap.data().sonoteData || [];
-            }
+            if (docSnap.exists()) { window.data = docSnap.data().sonoteData || []; }
             window.render();
         } else {
             document.getElementById('auth-overlay').style.display = 'flex';
@@ -128,7 +123,7 @@
         } catch (e) { document.getElementById('header-status').innerText = "Sync Error"; }
     };
 
-    // --- App Logic Functions ---
+    // --- 移植されたコアロジック (windowオブジェクトに紐付け) ---
     window.closeAllPickers = () => { if(activePickerId !== null) { activePickerId = null; customAreaVisible = false; window.render(); } };
     window.togglePicker = (e, id) => { e.stopPropagation(); activePickerId = (activePickerId === id) ? null : id; customAreaVisible = false; window.render(); };
     window.toggleCustomArea = () => { customAreaVisible = !customAreaVisible; window.render(); };
@@ -163,10 +158,9 @@
     };
 
     window.render = () => {
-        // Left: Category List
         document.getElementById("catList").innerHTML = window.data.map((c, cIdx)=>`
             <div class="cat-item-wrapper">
-                <button class="mainBtn ${c.id===activeCatId?'active-cat':''}" onclick="window.setActiveCat(${c.id})" ondblclick="event.stopPropagation(); window.data[${cIdx}].editing=true; window.render();">
+                <button class="mainBtn ${c.id===activeCatId?'active-cat':''}" onclick="window.selectCat(${c.id})" ondblclick="event.stopPropagation(); window.data[${cIdx}].editing=true; window.render();">
                     <span class="emoji-disp" onclick="window.togglePicker(event, ${c.id})">${c.emoji || '📝'}</span>
                     ${activePickerId === c.id ? window.getEmojiPickerHtml('cat', c.id) : ''}
                     ${c.editing?`<input class="inlineEdit" value="${c.name}" onkeydown="if(event.key==='Enter'){window.data[${cIdx}].name=this.value; window.data[${cIdx}].editing=false; window.save(); window.render();}" onblur="window.data[${cIdx}].name=this.value; window.data[${cIdx}].editing=false; window.save(); window.render();" autofocus onclick="event.stopPropagation()">`:c.name}
@@ -184,7 +178,6 @@
         if(cIdx === -1){ mainContainer.innerHTML="<p style='color:#ccc;text-align:center;margin-top:50px;'>カテゴリを選択または追加してください</p>"; glossaryContainer.innerHTML=""; return; }
         let cat = window.data[cIdx];
 
-        // Main Area
         mainContainer.innerHTML = `
             <div class="active-cat-title">${cat.name}</div>
             <div class="panel">
@@ -193,7 +186,7 @@
             </div>
             ${cat.folders.map((f, fIdx)=>`
                 <div class="folder">
-                    <button class="nameBtn" style="margin-bottom:10px;" onclick="window.data[${cIdx}].folders[${fIdx}].collapsed=!window.data[${cIdx}].folders[${fIdx}].collapsed; window.render();" ondblclick="event.stopPropagation(); window.data[${cIdx}].folders[${fIdx}].editing=true; window.render();">
+                    <button class="folderBtn" onclick="window.data[${cIdx}].folders[${fIdx}].collapsed=!window.data[${cIdx}].folders[${fIdx}].collapsed; window.render();" ondblclick="event.stopPropagation(); window.data[${cIdx}].folders[${fIdx}].editing=true; window.render();">
                         <span class="emoji-disp" onclick="window.togglePicker(event, ${f.id})">${f.emoji || (f.type==='char'?'👤':'📁')}</span>
                         ${activePickerId === f.id ? window.getEmojiPickerHtml('folder', f.id) : ''}
                         ${f.editing?`<input class="inlineEdit" value="${f.name}" onkeydown="if(event.key==='Enter'){window.data[${cIdx}].folders[${fIdx}].name=this.value; window.data[${cIdx}].folders[${fIdx}].editing=false; window.save(); window.render();}" onblur="window.data[${cIdx}].folders[${fIdx}].name=this.value; window.data[${cIdx}].folders[${fIdx}].editing=false; window.save(); window.render();" autofocus onclick="event.stopPropagation()">`:f.name}
@@ -201,34 +194,29 @@
                     </button>
                     <div style="display:${f.collapsed?'none':'block'};">
                         <textarea id="note-input-${f.id}" placeholder="新規メモを入力..."></textarea>
-                        <button class="saveNoteBtn" onclick="window.addNote(${cIdx}, ${fIdx}, ${f.id})">保存</button>
+                        <button class="saveNoteBtn" onclick="const v=document.getElementById('note-input-${f.id}').value; if(v){window.data[${cIdx}].folders[${fIdx}].notes.push({id:Date.now(),text:v,open:false,editing:false}); window.save(); window.render();}">保存</button>
                         <div style="margin-top:8px;">${f.notes.map((n, nIdx)=>`
                             <div class="fullContent-wrapper">
                                 ${n.editing ? `<textarea onblur="window.data[${cIdx}].folders[${fIdx}].notes[${nIdx}].editing=false; window.data[${cIdx}].folders[${fIdx}].notes[${nIdx}].text=this.value; window.save(); window.render();" autofocus>${n.text}</textarea>` :
                                 (!n.open?`<button class="previewBtn" onclick="window.data[${cIdx}].folders[${fIdx}].notes[${nIdx}].open=true; window.render();">${n.text.slice(0,30)}...</button>`:`<div class="fullContent" onclick="window.data[${cIdx}].folders[${fIdx}].notes[${nIdx}].open=false; window.render();">${n.text}</div>`)}
                                 <div class="actionGroup"><div class="miniBtn" onclick="event.stopPropagation(); window.data[${cIdx}].folders[${fIdx}].notes.splice(${nIdx},1); window.save(); window.render();">🗑</div><div class="miniBtn" onclick="event.stopPropagation(); window.data[${cIdx}].folders[${fIdx}].notes[${nIdx}].editing=true; window.render();">✏️</div></div>
                             </div>`).join("")}</div>
-                        ${f.type==='char'?`<div style="margin-top:16px; border-top:1px solid #ddd; padding-top:10px;"><button class="addBtn" onclick="window.toggleAddingItem(${f.id})">＋詳細設定</button>
-                            ${addingItemFolderId===f.id?`<div style="background:#eee;padding:10px;border-radius:12px;margin:8px 0;"><input id="new-name-${f.id}" placeholder="項目名（年齢、魔法など）"><textarea id="new-text-${f.id}" placeholder="内容"></textarea><button class="saveNoteBtn" onclick="window.addCharItem(${cIdx}, ${fIdx}, ${f.id})">保存</button></div>`:''}
+                        ${f.type==='char'?`<div style="margin-top:16px; border-top:1px solid #ddd; padding-top:10px;"><button class="addBtn" onclick="window.toggleAddItem(${f.id})">＋詳細設定</button>
+                            ${addingItemFolderId===f.id?`<div style="background:#eee;padding:10px;border-radius:12px;margin:8px 0;"><input id="new-name-${f.id}" placeholder="項目名"><textarea id="new-text-${f.id}" placeholder="内容"></textarea><button class="saveNoteBtn" onclick="window.saveCharItem(${cIdx}, ${fIdx}, ${f.id})">保存</button></div>`:''}
                             <div class="charRow">${f.items.map((i, iIdx)=>`<div class="charItem"><button class="nameBtn" onclick="i.open=!i.open; window.render();">${i.name}<div class="actionGroup"><div class="miniBtn" onclick="event.stopPropagation(); window.data[${cIdx}].folders[${fIdx}].items.splice(${iIdx},1); window.save(); window.render();">🗑</div></div></button>${i.open?`<div class="fullContent">${i.text}</div>`:''}</div>`).join("")}</div></div>`:""}
                     </div>
                 </div>`).join("")}`;
 
-        // Right Area: Glossary
         if(!cat.glossary) cat.glossary = [];
         glossaryContainer.innerHTML = `<div style="font-size:20px;margin-bottom:16px;border-bottom:2px solid #eee;padding-bottom:8px;">📖 用語集</div>
             <div style="background:#eee;padding:10px;border-radius:12px;margin-bottom:16px;"><input id="new-term-name" placeholder="用語名"><textarea id="new-term-desc" placeholder="説明" style="height:50px;"></textarea><button class="addBtn" style="width:100%;margin-top:8px;" onclick="window.addGlossary(${cIdx})">追加</button></div>
             ${cat.glossary.map((t, tIdx)=>`<div class="term-wrapper"><button class="termBtn" onclick="t.open=!t.open; window.render();">${t.name}<div class="actionGroup"><div class="miniBtn" onclick="event.stopPropagation(); window.data[${cIdx}].glossary.splice(${tIdx},1); window.save(); window.render();">🗑</div></div></button>${t.open?`<div class="term-desc">${t.desc}</div>`:''}</div>`).join("")}`;
     };
 
-    // --- Helper Functions to keep render clean ---
-    window.setActiveCat = (id) => { activeCatId = id; window.render(); };
-    window.toggleAddingItem = (id) => { addingItemFolderId = (addingItemFolderId === id ? null : id); window.render(); };
-    window.addNote = (cIdx, fIdx, fId) => {
-        const v = document.getElementById(`note-input-${fId}`).value;
-        if(v){ window.data[cIdx].folders[fIdx].notes.push({id:Date.now(),text:v,open:false,editing:false}); window.save(); window.render(); }
-    };
-    window.addCharItem = (cIdx, fIdx, fId) => {
+    // --- 補助関数 ---
+    window.selectCat = (id) => { activeCatId = id; window.render(); };
+    window.toggleAddItem = (id) => { addingItemFolderId = (addingItemFolderId === id ? null : id); window.render(); };
+    window.saveCharItem = (cIdx, fIdx, fId) => {
         const n = document.getElementById(`new-name-${fId}`).value;
         const t = document.getElementById(`new-text-${fId}`).value;
         window.data[cIdx].folders[fIdx].items.push({id:Date.now(),name:n,text:t,open:false});
