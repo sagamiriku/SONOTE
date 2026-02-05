@@ -1,226 +1,134 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <title>SONOTE - Cloud Edition</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link href="https://fonts.googleapis.com/css2?family=Sawarabi+Gothic:wght@700&family=Jost:wght@900&display=swap" rel="stylesheet">
-    <style>
-        /* 基本スタイル */
-        body{margin:0;font-family:"Sawarabi Gothic";font-weight:700;background:#fff;overflow:hidden;}
-        header { font-family: "Jost"; font-size: 34px; padding: 12px 24px; border-bottom: 1px solid #eee; background: #fff; display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
-        .header-left { display: flex; align-items: baseline; gap: 10px; }
-        .sync-status { font-size: 10px; font-family: "Sawarabi Gothic"; padding: 2px 6px; border-radius: 4px; background: #f0f0f0; color: #888; font-weight: 700; line-height: 1; transform: translateY(-2px); }
-        .logout-btn { background: #eee; border: none; border-radius: 6px; padding: 4px 8px; font-size: 12px; cursor: pointer; font-family: inherit; }
-        #auth-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .login-btn { background: #4285F4; color: #fff; border: none; padding: 12px 24px; border-radius: 8px; font-size: 16px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(66,133,244,0.3); }
-        .layout{display:flex;height:calc(100vh - 70px);width: 100vw;}
-        .left{width:15%; min-width:180px; border-right:1px solid #eee; padding:16px; background:#fafafa; overflow:auto; box-sizing: border-box;}
-        .main{width:50%; min-width:350px; padding:28px; overflow:auto; border-right:1px solid #eee; box-sizing: border-box;}
-        .right{width:35%; min-width:250px; padding:16px; background:#fcfcfc; overflow:auto; box-sizing: border-box;}
-        .active-cat-title { text-align: left; font-size: 28px; margin-bottom: 24px; color: #333; border-left: 8px solid #f6f6f6; padding: 0 0 0 16px; line-height: 1.2; }
-        .panel{background:#eee;border-radius:14px;padding:10px;margin-bottom:12px;display:flex;gap:8px; flex-wrap: wrap;}
-        .addBtn{background:#555;color:#fff;border:none;border-radius:10px;padding:8px 12px;font-weight:700;cursor:pointer;}
-        .mainBtn, .nameBtn, .saveNoteBtn, .previewBtn, .boxBtn { background:#fff; border:2px solid #000; border-radius:12px; padding:8px 14px; font-size:14px; font-weight:700; cursor:pointer; position:relative !important; text-align:left; font-family:inherit; display: flex; align-items: center; gap: 8px; word-break: break-all; white-space: normal; overflow-wrap: break-word; }
-        .mainBtn { padding-right: 34px; margin: 4px; width: calc(100% - 8px); box-sizing: border-box;}
-        .box-container { border: 2px dashed #ccc; border-radius: 18px; padding: 12px; margin-bottom: 20px; background: #fff; position: relative;}
-        .boxBtn { background: #000 !important; color: #fff !important; margin-bottom: 12px; width: 100%; box-sizing: border-box; }
-        .emoji-disp { font-size: 1.2em; cursor: pointer; transition: 0.2s; padding: 2px; border-radius: 4px; flex-shrink: 0; }
-        .emoji-picker { position: absolute; top: 40px; left: 0; background: #fff; border: 2px solid #000; border-radius: 12px; padding: 8px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        .emoji-item { cursor: pointer; font-size: 18px; text-align: center; padding: 4px; border-radius: 6px; }
-        .actionGroup { position:absolute; top: 2px; right: 2px; display:flex; flex-direction:row; gap:2px; opacity:0; transition:0.2s; z-index:20; }
-        .mainBtn:hover .actionGroup, .nameBtn:hover .actionGroup, .boxBtn:hover .actionGroup, .previewBtn:hover .actionGroup { opacity:1; }
-        .miniBtn { padding:2px 6px; border:2px solid #000; background:#fff; border-radius:6px; font-size:12px; cursor:pointer; line-height:1.2; color: #000; }
-        .active-cat { background: #f6f6f6 !important; border-color: #000; }
-        .folder{background:#f6f6f6; border:none; border-radius:16px; padding:14px; margin-bottom:16px; display: block; overflow: visible; position: relative;}
-        textarea,input{width:100%;border:2px solid #000;border-radius:12px;padding:8px;margin-top:6px;box-sizing:border-box;font-family:inherit;font-weight:700;}
-        .inlineEdit { border:2px solid #000; border-radius:8px; padding:4px; font-weight:700; width:80%; margin:0; }
-        .fullContent { font-size:14px; white-space:pre-wrap; border-left: 4px solid #000; padding: 4px 34px 4px 16px; cursor: pointer; min-height:1.2em; position:relative;}
-        .previewBtn { width:100%; margin-top:4px; padding:8px 34px 8px 12px; font-size:13px; border:none; text-align: left;}
-        .move-selector { background:#fff; border:2px solid #000; border-radius:12px; padding:10px; margin:8px 0; font-size:13px; color: #000; }
-    </style>
-</head>
-<body onclick="window.closeAllPickers()">
-
-<div id="auth-overlay">
-    <header style="border:none; font-size: 48px;">SONOTE</header>
-    <button class="login-btn" onclick="window.login()">Googleアカウントでログイン</button>
-</div>
-
-<header>
-    <div class="header-left">SONOTE<span id="header-status" class="sync-status">Connecting...</span></div>
-    <button class="logout-btn" onclick="window.logout()">Logout</button>
-</header>
-
-<div class="layout">
-    <div class="left"><div class="panel"><button class="addBtn" onclick="window.addCategory()">＋追加</button></div><div id="catList"></div></div>
-    <div class="main" id="main"></div>
-    <div class="right" id="glossary"></div>
-</div>
-
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, doc, setDoc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-    import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-
-    const firebaseConfig = {
-        apiKey: "AIzaSyDPYhwYgFtr5pp8PYjtUMfCP541NoAmmcM",
-        authDomain: "sonote-cba11.firebaseapp.com",
-        projectId: "sonote-cba11",
-        storageBucket: "sonote-cba11.firebasestorage.app",
-        messagingSenderId: "41068766709",
-        appId: "1:41068766709:web:be0782bb13591ebc74acbc"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const auth = getAuth(app);
-    const provider = new GoogleAuthProvider();
-    let docRef = null;
-
-    window.data = [];
-    let activeCatId = null;
-    let activePickerId = null;
-    let movingFolderId = null;
-    const EMOJI_LIST = ["📝","📁","👤","💡","🔥","⭐","🔑","🌈","🛡️","🧪","📜","🗺️","🎭","💎","⌛","📦"];
-
-    window.login = () => signInWithPopup(auth, provider).catch(err => alert(err.message));
-    window.logout = () => signOut(auth).then(() => { location.reload(); });
-
-    onAuthStateChanged(auth, async (user) => {
-        if (user) {
-            document.getElementById('auth-overlay').style.display = 'none';
-            docRef = doc(db, "users", user.uid);
-            onSnapshot(docRef, (docSnap) => {
-                if (docSnap.exists()) {
-                    const cloudData = docSnap.data().sonoteData;
-                    if (cloudData && JSON.stringify(window.data) !== JSON.stringify(cloudData)) {
-                        window.data = cloudData; window.render();
-                        document.getElementById('header-status').innerText = "Cloud";
-                    }
-                }
-            });
-            const docSnap = await getDoc(docRef);
-            if (docSnap.exists() && docSnap.data().sonoteData) { window.data = docSnap.data().sonoteData; }
-            window.render();
-        } else {
-            document.getElementById('auth-overlay').style.display = 'flex';
+<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><title>SONOTE - Cloud Edition</title><link href="https://fonts.googleapis.com/css2?family=Sawarabi+Gothic:wght@700&family=Jost:wght@900&display=swap" rel="stylesheet"><style>/* --- 全体レイアウト・デザイン --- */body{margin:0;font-family:"Sawarabi Gothic";font-weight:700;background:#fff;overflow:hidden;}header {
+    font-family: "Jost"; 
+    font-size: 34px; 
+    padding: 12px 24px; 
+    border-bottom: 1px solid #eee; 
+    background: #fff;
+    display: flex; 
+    align-items: baseline; /* 文字の下端で揃える */
+    gap: 10px;             /* ロゴとラベルの距離 */
+}.sync-status {
+    font-size: 10px; 
+    font-family: "Sawarabi Gothic"; 
+    padding: 2px 6px; 
+    border-radius: 4px; 
+    background: #f0f0f0;   /* 薄いグレー地 */
+    color: #888;           /* 濃いめのグレー字 */
+    font-weight: 700;
+    line-height: 1;
+    transform: translateY(-2px); /* 右下に沈める微調整 */
+}.layout{display:flex;height:calc(100vh - 70px);width: 100vw;}.left{width:15%; min-width:180px; border-right:1px solid #eee; padding:16px; background:#fafafa; overflow:auto; box-sizing: border-box;}.main{width:50%; min-width:350px; padding:28px; overflow:auto; border-right:1px solid #eee; box-sizing: border-box;}.right{width:35%; min-width:250px; padding:16px; background:#fcfcfc; overflow:auto; box-sizing: border-box;}/* UI要素 */.active-cat-title { text-align: left; font-size: 28px; margin-bottom: 24px; color: #333; border-left: 8px solid #f6f6f6; padding: 0 0 0 16px; line-height: 1.2; }.panel{background:#eee;border-radius:14px;padding:10px;margin-bottom:12px;display:flex;gap:8px; flex-wrap: wrap;}.addBtn{background:#555;color:#fff;border:none;border-radius:10px;padding:8px 12px;font-weight:700;cursor:pointer;}.mainBtn, .nameBtn, .saveNoteBtn, .folderBtn, .previewBtn { background:#fff; border:2px solid #000; border-radius:12px; padding:8px 14px; font-size:14px; font-weight:700; cursor:pointer; position:relative; text-align:left; font-family:inherit; display: flex; align-items: center; gap: 8px; word-break: break-all; white-space: normal; overflow-wrap: break-word; }.mainBtn { padding-right: 34px; margin: 4px; width: calc(100% - 8px); box-sizing: border-box;}/* 絵文字ピッカー */.emoji-disp { font-size: 1.2em; cursor: pointer; transition: 0.2s; padding: 2px; border-radius: 4px; flex-shrink: 0; }.emoji-disp:hover { background: #eee; }.emoji-picker { position: absolute; top: 40px; left: 0; background: #fff; border: 2px solid #000; border-radius: 12px; padding: 8px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }.emoji-item { cursor: pointer; font-size: 18px; text-align: center; padding: 4px; border-radius: 6px; }.emoji-item:hover { background: #eee; }.custom-emoji-area { grid-column: span 4; border-top: 1px solid #eee; padding-top: 8px; margin-top: 4px; display: flex; justify-content: center; }.custom-emoji-area input { width: 100% !important; padding: 6px !important; margin: 0 !important; text-align: center; font-size: 14px; height: 32px; border: 2px solid #ddd !important; }/* 操作ボタン（ホバーで表示） */.actionGroup { position:absolute; top:-8px; right:-8px; display:flex; flex-direction:column; gap:2px; opacity:0; transition:0.2s; z-index:20; }.mainBtn:hover .actionGroup, .nameBtn:hover .actionGroup, .folderBtn:hover .actionGroup, .previewBtn:hover .actionGroup, .fullContent-wrapper:hover .actionGroup, .term-wrapper:hover .actionGroup, .term-desc:hover .actionGroup, .fullContent:hover .actionGroup { opacity:1; }.miniBtn { padding:2px 6px; border:2px solid #000; background:#fff; border-radius:6px; font-size:14px; cursor:pointer; line-height:1.2; }.miniBtn:hover { background: #eee; }.active-cat { background: #f6f6f6 !important; border-color: #000; }.cat-item-wrapper { position: relative; margin-bottom: 12px; }.move-btns { display: flex; gap: 6px; padding-left: 8px; margin-top: 2px; }.arrowBtn { background: transparent; border: none; cursor: pointer; font-size: 16px; padding: 0 4px; color: #aaa; transition: 0.2s; }.arrowBtn:hover { color: #000; }/* メインエリア・フォルダ・メモ */.folder{background:#f6f6f6; border:none; border-radius:16px; padding:14px; margin-bottom:12px; display: block; overflow: visible; cursor: grab;}.folderBtn { width: fit-content; max-width: 100%; display: flex; padding-right: 34px; margin-bottom:10px;}.nameBtn { width: fit-content; padding-right: 34px; display: inline-flex; align-items: center; max-width: 100%;}textarea,input{width:100%;border:2px solid #000;border-radius:12px;padding:8px;margin-top:6px;box-sizing:border-box;font-family:inherit;font-weight:700;}.inlineEdit { border:2px solid #000; border-radius:8px; padding:4px; font-weight:700; width:80%; margin:0; }.fullContent-wrapper { position: relative; width: 100%; margin: 8px 0; }.fullContent { font-size:14px; white-space:pre-wrap; border-left: 4px solid #000; padding: 4px 34px 4px 16px; cursor: pointer; min-height:1.2em; position:relative;}.previewBtn { width:100%; margin-top:4px; padding:8px 34px 8px 12px; font-size:13px; border:none; text-align: left;}.charRow{display:flex; flex-direction: column; gap:12px; margin-top:12px;}.charItem { position: relative; margin-bottom: 10px; }/* 用語集 */.term-wrapper { margin-bottom: 12px; width: 100%; box-sizing: border-box; border-bottom: 1px solid #f0f0f0; padding-bottom: 8px; display: block; }.termBtn { width: auto; border: none; background: transparent; border-radius: 0; padding: 4px 0px; font-size: 15px; color: #333; display: block; text-align: left; }.term-desc { font-size: 14px; white-space: pre-wrap; border-left: 4px solid #000; padding: 0px 12px; margin: 4px 0 0 0; cursor: pointer; position: relative; line-height: 1.4; color: #444; font-weight: 700; text-align: left; display: block; width: fit-content; max-width: 100%; word-break: break-all; min-height: 0; }</style></head><body onclick="closeAllPickers()"><header>
+    SONOTE
+    <span id="header-status" class="sync-status">Connecting...</span></header><div class="layout">
+    <div class="left"><div class="panel"><button class="addBtn" onclick="addCategory()">＋追加</button></div><div id="catList"></div></div>
+    <div class="main" id="main" ondragover="initDragOver(event)"></div>
+    <div class="right" id="glossary"></div></div><script type="module">import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";import { getFirestore, doc, setDoc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";const firebaseConfig = {
+  apiKey: "AIzaSyDPYhwYgFtr5pp8PYjtUMfCP541NoAmmcM",
+  authDomain: "sonote-cba11.firebaseapp.com",
+  projectId: "sonote-cba11",
+  storageBucket: "sonote-cba11.firebasestorage.app",
+  messagingSenderId: "41068766709",
+  appId: "1:41068766709:web:be0782bb13591ebc74acbc",
+  measurementId: "G-GSFVSPG173"
+};const app = initializeApp(firebaseConfig);const db = getFirestore(app);const docRef = doc(db, "users", "default_user");// 保存関数window.save = async function() {
+    try {
+        await setDoc(docRef, { sonoteData: data }, { merge: true });
+        document.getElementById('header-status').innerText = "Cloud Synced";
+    } catch (e) {
+        document.getElementById('header-status').innerText = "Sync Error";
+    }
+};// リアルタイム同期onSnapshot(docRef, (docSnap) => {
+    if (docSnap.exists()) {
+        const cloudData = docSnap.data().sonoteData;
+        if (JSON.stringify(data) !== JSON.stringify(cloudData)) {
+            data = cloudData || [];
+            render();
+            document.getElementById('header-status').innerText = "Cloud";
         }
-    });
+    }
+});// 初期起動async function init() {
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+        data = docSnap.data().sonoteData || [];
+    } else {
+        const local = localStorage.getItem("sonote_emoji_v79");
+        if (local) { data = JSON.parse(local); await window.save(); }
+    }
+    render();
+}init();</script><script>/* --- Core App Logic --- */let data = [];let activeCatId = null;let addingItemFolderId = null;let activePickerId = null;let customAreaVisible = false;const EMOJI_LIST = ["📝","📁","👤","💡","🔥","⭐","🔑","🌈","🛡️","🧪","📜","🗺️","🎭","💎","⌛"];function closeAllPickers(){ if(activePickerId !== null) { activePickerId = null; customAreaVisible = false; render(); } }function togglePicker(e, id){ e.stopPropagation(); activePickerId = (activePickerId === id) ? null : id; customAreaVisible = false; render(); }function toggleCustomArea(){ customAreaVisible = !customAreaVisible; render(); }function setEmoji(type, id, emoji){
+    if(!emoji) return;
+    if(type === 'cat'){
+        const target = data.find(c => c.id === id);
+        if(target) target.emoji = emoji;
+    } else {
+        const cat = data.find(c => c.id === activeCatId);
+        if(cat){
+            const folder = cat.folders.find(f => f.id === id);
+            if(folder) folder.emoji = emoji;
+        }
+    }
+    activePickerId = null; customAreaVisible = false; save(); render();
+}function getEmojiPickerHtml(type, targetId, currentEmoji){
+    return `<div class="emoji-picker" onclick="event.stopPropagation()">
+        ${EMOJI_LIST.map(e => `<div class="emoji-item" onclick="setEmoji('${type}', ${targetId}, '${e}')">${e}</div>`).join("")}
+        <div class="emoji-item" onclick="toggleCustomArea()">＋</div>
+        ${customAreaVisible ? `<div class="custom-emoji-area"><input type="text" class="custom-input" maxlength="4" placeholder="Enter" onkeydown="if(event.key==='Enter') setEmoji('${type}', ${targetId}, this.value)" autofocus></div>` : ''}
+    </div>`;
+}function render(){
+    // Left: Category List
+    document.getElementById("catList").innerHTML = data.map((c, cIdx)=>`
+        <div class="cat-item-wrapper">
+            <button class="mainBtn ${c.id===activeCatId?'active-cat':''}" onclick="activeCatId=${c.id}; render();" ondblclick="event.stopPropagation(); data[${cIdx}].editing=true; render();">
+                <span class="emoji-disp" onclick="togglePicker(event, ${c.id})">${c.emoji || '📝'}</span>
+                ${activePickerId === c.id ? getEmojiPickerHtml('cat', c.id, c.emoji) : ''}
+                ${c.editing?`<input class="inlineEdit" value="${c.name}" onkeydown="if(event.key==='Enter'){data[${cIdx}].name=this.value; data[${cIdx}].editing=false; save(); render();}" onblur="data[${cIdx}].name=this.value; data[${cIdx}].editing=false; save(); render();" autofocus onclick="event.stopPropagation()">`:c.name}
+                <div class="actionGroup"><div class="miniBtn" onclick="event.stopPropagation(); data = data.filter(x=>x.id!==${c.id}); if(activeCatId===${c.id}) activeCatId=null; save(); render();">🗑</div></div>
+            </button>
+            <div class="move-btns">
+                <button class="arrowBtn" onclick="let t=data[${cIdx}]; data[${cIdx}]=data[${cIdx}-1]; data[${cIdx}-1]=t; save(); render();" ${cIdx===0?'disabled':''}>▲</button>
+                <button class="arrowBtn" onclick="let t=data[${cIdx}]; data[${cIdx}]=data[${cIdx}+1]; data[${cIdx}+1]=t; save(); render();" ${cIdx===data.length-1?'disabled':''}>▼</button>
+            </div>
+        </div>`).join("");
 
-    window.save = async function() {
-        if (!docRef) return;
-        try {
-            await setDoc(docRef, { sonoteData: window.data }, { merge: true });
-            document.getElementById('header-status').innerText = "Cloud Synced";
-        } catch (e) { document.getElementById('header-status').innerText = "Sync Error"; }
-    };
+    const mainContainer = document.getElementById("main");
+    const glossaryContainer = document.getElementById("glossary");
+    const cIdx = data.findIndex(c => c.id === activeCatId);
+    if(cIdx === -1){ mainContainer.innerHTML="<p style='color:#ccc;text-align:center;margin-top:50px;'>カテゴリを選択または追加してください</p>"; glossaryContainer.innerHTML=""; return; }
+    let cat = data[cIdx];
 
-    window.closeAllPickers = () => { activePickerId = null; window.render(); };
-    window.togglePicker = (e, id) => { e.stopPropagation(); activePickerId = (activePickerId === id) ? null : id; window.render(); };
-
-    // 絵文字セット用ヘルパー
-    window.setEmoji = (id, emoji) => {
-        const findAndSet = (list) => {
-            for(let item of list){
-                if(item.id === id){ item.emoji = emoji; return true; }
-                if(item.boxes && findAndSet(item.boxes)) return true;
-                if(item.folders && findAndSet(item.folders)) return true;
-            }
-        };
-        findAndSet(window.data); window.save(); activePickerId = null; window.render();
-    };
-
-    window.getPicker = (id) => `
-        <div class="emoji-picker" onclick="event.stopPropagation()">
-            ${EMOJI_LIST.map(e => `<div class="emoji-item" onclick="window.setEmoji(${id}, '${e}')">${e}</div>`).join("")}
-        </div>`;
-
-    // フォルダ・キャラHTML生成
-    window.getFolderHtml = (f, fIdx, listStr, isInsideBox) => {
-        const catIdx = window.data.findIndex(c => c.id === activeCatId);
-        return `
-        <div class="folder">
-            <div style="display:flex; align-items:center; gap:8px;">
-                <button class="nameBtn" style="flex:1;" onclick="${listStr}[${fIdx}].collapsed=!${listStr}[${fIdx}].collapsed; window.render();" ondblclick="event.stopPropagation(); ${listStr}[${fIdx}].editing=true; window.render();">
-                    <span class="emoji-disp" onclick="window.togglePicker(event, ${f.id})">${f.emoji || (f.type==='char'?'👤':'📁')}</span>
-                    ${activePickerId === f.id ? window.getPicker(f.id) : ''}
-                    ${f.editing?`<input class="inlineEdit" value="${f.name}" onblur="${listStr}[${fIdx}].name=this.value; ${listStr}[${fIdx}].editing=false; window.save(); window.render();" autofocus onclick="event.stopPropagation()">`:f.name}
-                    <div class="actionGroup">
-                        ${!isInsideBox ? `<div class="miniBtn" onclick="event.stopPropagation(); movingFolderId=${f.id}; window.render();">🚚</div>` : ''}
-                        <div class="miniBtn" onclick="event.stopPropagation(); ${listStr}.splice(${fIdx},1); window.save(); window.render();">🗑</div>
-                    </div>
+    // Main: Folders & Notes
+    mainContainer.innerHTML = `
+        <div class="active-cat-title">${cat.name}</div>
+        <div class="panel">
+            <button class="addBtn" onclick="data[${cIdx}].folders.push({id:Date.now(),type:'char',name:'キャラクター',emoji:'👤',editing:false,collapsed:false,notes:[],items:[]}); save(); render();">＋キャラ</button>
+            <button class="addBtn" onclick="data[${cIdx}].folders.push({id:Date.now(),type:'folder',name:'フォルダ',emoji:'📁',editing:false,collapsed:false,notes:[],items:[]}); save(); render();">＋フォルダ</button>
+        </div>
+        ${cat.folders.map((f, fIdx)=>`
+            <div class="folder" data-id="${f.id}" style="${f.collapsed ? 'padding: 8px 14px; margin-bottom: 8px;' : ''}">
+                <button class="folderBtn" style="${f.collapsed ? 'margin-bottom: 0px;' : ''}" onclick="data[${cIdx}].folders[${fIdx}].collapsed=!data[${cIdx}].folders[${fIdx}].collapsed; render();" ondblclick="event.stopPropagation(); data[${cIdx}].folders[${fIdx}].editing=true; render();">
+                    <span class="emoji-disp" onclick="togglePicker(event, ${f.id})">${f.emoji || (f.type==='char'?'👤':'📁')}</span>
+                    ${activePickerId === f.id ? getEmojiPickerHtml('folder', f.id, f.emoji) : ''}
+                    ${f.editing?`<input class="inlineEdit" value="${f.name}" onkeydown="if(event.key==='Enter'){data[${cIdx}].folders[${fIdx}].name=this.value; data[${cIdx}].folders[${fIdx}].editing=false; save(); render();}" onblur="data[${cIdx}].folders[${fIdx}].name=this.value; data[${cIdx}].folders[${fIdx}].editing=false; save(); render();" autofocus onclick="event.stopPropagation()">`:f.name}
+                    <div class="actionGroup"><div class="miniBtn" onclick="event.stopPropagation(); data[${cIdx}].folders.splice(${fIdx},1); save(); render();">🗑</div></div>
                 </button>
-            </div>
-            ${movingFolderId === f.id ? `
-                <div class="move-selector">
-                    移動先: ${window.data[catIdx].boxes.map((b, bIdx) => `<button class="miniBtn" style="margin-left:5px;" onclick="const folder=window.data[${catIdx}].folders.splice(${fIdx},1)[0]; window.data[${catIdx}].boxes[${bIdx}].folders.push(folder); movingFolderId=null; window.save(); window.render();">${b.name}</button>`).join("")}
-                    <button class="miniBtn" style="background:#eee;" onclick="movingFolderId=null; window.render();">取消</button>
-                </div>` : ''}
-            <div style="display:${f.collapsed?'none':'block'}; margin-top:10px;">
-                <textarea id="ni-${f.id}" placeholder="メモ..."></textarea>
-                <button class="saveNoteBtn" onclick="const v=document.getElementById('ni-${f.id}').value; if(v){${listStr}[${fIdx}].notes.push({id:Date.now(),text:v}); window.save(); window.render();}">保存</button>
-                <div style="margin-top:8px;">${f.notes.map((n, nIdx)=>`
-                    <div style="position:relative; margin-bottom:5px;">
-                        ${n.editing ? `<textarea onblur="${listStr}[${fIdx}].notes[${nIdx}].editing=false; ${listStr}[${fIdx}].notes[${nIdx}].text=this.value; window.save(); window.render();" autofocus>${n.text}</textarea>` :
-                        (!n.open?`<button class="previewBtn" onclick="${listStr}[${fIdx}].notes[${nIdx}].open=true; window.render();">${n.text.slice(0,30)}...</button>`:`<div class="fullContent" onclick="${listStr}[${fIdx}].notes[${nIdx}].open=false; window.render();">${n.text}</div>`)}
-                        <div class="actionGroup"><div class="miniBtn" onclick="${listStr}[${fIdx}].notes.splice(${nIdx},1); window.save(); window.render();">🗑</div><div class="miniBtn" onclick="${listStr}[${fIdx}].notes[${nIdx}].editing=true; window.render();">✏️</div></div>
-                    </div>`).join("")}</div>
-            </div>
-        </div>`;
-    };
+                <div style="display:${f.collapsed?'none':'block'};">
+                    <textarea id="note-input-${f.id}" placeholder="新規メモを入力..."></textarea>
+                    <button class="saveNoteBtn" onclick="const v=document.getElementById('note-input-${f.id}').value; if(v){data[${cIdx}].folders[${fIdx}].notes.push({id:Date.now(),text:v,open:false,editing:false}); save(); render();}">保存</button>
+                    <div style="margin-top:8px;">${f.notes.map((n, nIdx)=>`
+                        <div class="fullContent-wrapper">
+                            ${n.editing ? `<textarea onblur="data[${cIdx}].folders[${fIdx}].notes[${nIdx}].editing=false; data[${cIdx}].folders[${fIdx}].notes[${nIdx}].text=this.value; save(); render();" autofocus>${n.text}</textarea>` :
+                            (!n.open?`<button class="previewBtn" onclick="data[${cIdx}].folders[${fIdx}].notes[${nIdx}].open=true; render();">${n.text.slice(0,30)}...</button>`:`<div class="fullContent" onclick="data[${cIdx}].folders[${fIdx}].notes[${nIdx}].open=false; render();">${n.text}</div>`)}
+                            <div class="actionGroup"><div class="miniBtn" onclick="event.stopPropagation(); data[${cIdx}].folders[${fIdx}].notes.splice(${nIdx},1); save(); render();">🗑</div><div class="miniBtn" onclick="event.stopPropagation(); data[${cIdx}].folders[${fIdx}].notes[${nIdx}].editing=true; render();">✏️</div></div>
+                        </div>`).join("")}</div>
+                    ${f.type==='char'?`<div style="margin-top:16px; border-top:1px solid #ddd; padding-top:10px;"><button class="addBtn" onclick="addingItemFolderId=(addingItemFolderId===${f.id}?null:${f.id}); render();">＋詳細設定</button>
+                        ${addingItemFolderId===f.id?`<div style="background:#eee;padding:10px;border-radius:12px;margin:8px 0;"><input id="new-name-${f.id}" placeholder="項目名（年齢、魔法など）"><textarea id="new-text-${f.id}" placeholder="内容"></textarea><button class="saveNoteBtn" onclick="const n=document.getElementById('new-name-${f.id}').value; const t=document.getElementById('new-text-${f.id}').value; data[${cIdx}].folders[fIdx].items.push({id:Date.now(),name:n,text:t,open:false}); addingItemFolderId=null; save(); render();">保存</button></div>`:''}
+                        <div class="charRow">${f.items.map((i, iIdx)=>`<div class="charItem"><button class="nameBtn" onclick="i.open=!i.open; render();">${i.name}<div class="actionGroup"><div class="miniBtn" onclick="event.stopPropagation(); f.items.splice(${iIdx},1); save(); render();">🗑</div></div></button>${i.open?`<div class="fullContent">${i.text}</div>`:''}</div>`).join("")}</div></div>`:""}
+                </div>
+            </div>`).join("")}`;
 
-    window.render = () => {
-        const catListDiv = document.getElementById("catList");
-        catListDiv.innerHTML = window.data.map((c, cIdx)=>`
-            <div class="cat-item-wrapper">
-                <button class="mainBtn ${c.id===activeCatId?'active-cat':''}" onclick="activeCatId=${c.id}; window.render();" ondblclick="window.data[${cIdx}].editing=true; window.render();">
-                    <span class="emoji-disp" onclick="window.togglePicker(event, ${c.id})">${c.emoji || '📝'}</span>
-                    ${activePickerId === c.id ? window.getPicker(c.id) : ''}
-                    ${c.editing?`<input class="inlineEdit" value="${c.name}" onblur="window.data[${cIdx}].name=this.value; window.data[${cIdx}].editing=false; window.save(); window.render();" autofocus onclick="event.stopPropagation()">`:c.name}
-                    <div class="actionGroup"><div class="miniBtn" onclick="window.data.splice(${cIdx},1); window.save(); window.render();">🗑</div></div>
-                </button>
-            </div>`).join("");
-
-        const main = document.getElementById("main");
-        const cIdx = window.data.findIndex(c => c.id === activeCatId);
-        if(cIdx === -1){ main.innerHTML="カテゴリを選択"; return; }
-        const cat = window.data[cIdx];
-        if(!cat.boxes) cat.boxes = []; if(!cat.folders) cat.folders = [];
-
-        main.innerHTML = `
-            <div class="active-cat-title">${cat.name}</div>
-            <div class="panel">
-                <button class="addBtn" onclick="window.data[${cIdx}].boxes.push({id:Date.now(),name:'新規BOX',emoji:'📦',folders:[]}); window.save(); window.render();">＋BOX</button>
-                <button class="addBtn" onclick="window.data[${cIdx}].folders.push({id:Date.now(),type:'char',name:'キャラ',emoji:'👤',notes:[]}); window.save(); window.render();">＋キャラ</button>
-                <button class="addBtn" onclick="window.data[${cIdx}].folders.push({id:Date.now(),type:'folder',name:'フォルダ',emoji:'📁',notes:[]}); window.save(); window.render();">＋フォルダ</button>
-            </div>
-            ${cat.boxes.map((b, bIdx)=>`
-                <div class="box-container">
-                    <button class="boxBtn" onclick="window.data[${cIdx}].boxes[${bIdx}].collapsed=!window.data[${cIdx}].boxes[${bIdx}].collapsed; window.render();" ondblclick="event.stopPropagation(); window.data[${cIdx}].boxes[${bIdx}].editing=true; window.render();">
-                        <span class="emoji-disp" onclick="window.togglePicker(event, ${b.id})">${b.emoji || '📦'}</span>
-                        ${activePickerId === b.id ? window.getPicker(b.id) : ''}
-                        ${b.editing?`<input class="inlineEdit" style="color:#000" value="${b.name}" onblur="window.data[${cIdx}].boxes[${bIdx}].name=this.value; window.data[${cIdx}].boxes[${bIdx}].editing=false; window.save(); window.render();" autofocus onclick="event.stopPropagation()">`:b.name}
-                        <div class="actionGroup"><div class="miniBtn" onclick="event.stopPropagation(); window.data[${cIdx}].boxes.splice(${bIdx},1); window.save(); window.render();">🗑</div></div>
-                    </button>
-                    <div style="display:${b.collapsed?'none':'block'};">
-                        <div class="panel" style="background:#f9f9f9;"><button class="addBtn" onclick="window.data[${cIdx}].boxes[${bIdx}].folders.push({id:Date.now(),type:'char',name:'内キャラ',emoji:'👤',notes:[]}); window.save(); window.render();">＋内キャラ</button></div>
-                        ${b.folders.map((f, fIdx) => window.getFolderHtml(f, fIdx, `window.data[${cIdx}].boxes[${bIdx}].folders`, true)).join("")}
-                    </div>
-                </div>`).join("")}
-            ${cat.folders.map((f, fIdx)=> window.getFolderHtml(f, fIdx, `window.data[${cIdx}].folders`, false)).join("")}`;
-
-        // 用語集
-        const right = document.getElementById("glossary");
-        if(!cat.glossary) cat.glossary = [];
-        right.innerHTML = `<div>📖 用語集</div>
-            <input id="gt-n" placeholder="名"><textarea id="gt-d" placeholder="説"></textarea><button class="addBtn" onclick="const n=document.getElementById('gt-n').value; if(n){window.data[${cIdx}].glossary.push({id:Date.now(),name:n,desc:document.getElementById('gt-d').value}); window.save(); window.render();}">追加</button>
-            ${cat.glossary.map((t, tIdx)=>`<div class="term-wrapper"><button class="termBtn" style="width:100%" onclick="window.data[${cIdx}].glossary[${tIdx}].open=!window.data[${cIdx}].glossary[${tIdx}].open; window.render();">${t.name}</button>${t.open ? `<div class="term-desc">${t.desc}</div>` : ''}</div>`).join("")}`;
-    };
-
-    window.addCategory = () => { window.data.push({id:Date.now(),name:"新規",emoji:"📝",folders:[],boxes:[],glossary:[]}); window.save(); window.render(); };
-</script>
-</body>
-</html>
+    // Right: Glossary
+    if(!cat.glossary) cat.glossary = [];
+    glossaryContainer.innerHTML = `<div style="font-size:20px;margin-bottom:16px;border-bottom:2px solid #eee;padding-bottom:8px;">📖 用語集</div>
+        <div style="background:#eee;padding:10px;border-radius:12px;margin-bottom:16px;"><input id="new-term-name" placeholder="用語名"><textarea id="new-term-desc" placeholder="説明" style="height:50px;"></textarea><button class="addBtn" style="width:100%;margin-top:8px;" onclick="const n=document.getElementById('new-term-name').value; const d=document.getElementById('new-term-desc').value; if(n){cat.glossary.push({id:Date.now(),name:n,desc:d,open:false}); save(); render();}">追加</button></div>
+        ${cat.glossary.map((t, tIdx)=>`<div class="term-wrapper"><button class="termBtn" onclick="t.open=!t.open; render();">${t.name}<div class="actionGroup"><div class="miniBtn" onclick="event.stopPropagation(); cat.glossary.splice(${tIdx},1); save(); render();">🗑</div></div></button>${t.open?`<div class="term-desc">${t.desc}</div>`:''}</div>`).join("")}`;
+}function addCategory(){ data.push({id:Date.now(),name:"新規カテゴリ",emoji:"📝",folders:[],glossary:[]}); save(); render(); }function initDragOver(e){ e.preventDefault(); } </script></body></html>
