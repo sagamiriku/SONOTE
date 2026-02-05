@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link href="https://fonts.googleapis.com/css2?family=Sawarabi+Gothic:wght@700&family=Jost:wght@900&display=swap" rel="stylesheet">
     <style>
-        /* --- スタイル継承 & ボタン位置修正 --- */
+        /* --- スタイル・デザイン --- */
         body{margin:0;font-family:"Sawarabi Gothic";font-weight:700;background:#fff;overflow:hidden;}
         header { font-family: "Jost"; font-size: 34px; padding: 12px 24px; border-bottom: 1px solid #eee; background: #fff; display: flex; align-items: baseline; gap: 10px; }
         .sync-status { font-size: 10px; font-family: "Sawarabi Gothic"; padding: 2px 6px; border-radius: 4px; background: #f0f0f0; color: #888; font-weight: 700; line-height: 1; transform: translateY(-2px); }
@@ -22,7 +22,7 @@
         .panel{background:#eee;border-radius:14px;padding:10px;margin-bottom:12px;display:flex;gap:8px; flex-wrap: wrap;}
         .addBtn{background:#555;color:#fff;border:none;border-radius:10px;padding:8px 12px;font-weight:700;cursor:pointer;}
         
-        /* 修正点：position:relative を強化 */
+        /* 構造維持のためのrelative設定 */
         .mainBtn, .nameBtn, .saveNoteBtn, .folderBtn, .previewBtn { background:#fff; border:2px solid #000; border-radius:12px; padding:8px 14px; font-size:14px; font-weight:700; cursor:pointer; position:relative !important; text-align:left; font-family:inherit; display: flex; align-items: center; gap: 8px; word-break: break-all; white-space: normal; overflow-wrap: break-word; }
         .mainBtn { padding-right: 34px; margin: 4px; width: calc(100% - 8px); box-sizing: border-box;}
         
@@ -32,7 +32,7 @@
         .custom-emoji-area { grid-column: span 4; border-top: 1px solid #eee; padding-top: 8px; margin-top: 4px; display: flex; justify-content: center; }
         .custom-input { width: 100% !important; padding: 6px !important; margin: 0 !important; text-align: center; font-size: 14px; height: 32px; border: 2px solid #ddd !important; }
         
-        /* ボタンの位置修正 */
+        /* アクションボタン（右上固定） */
         .actionGroup { position:absolute; top: 2px; right: 2px; display:flex; flex-direction:row; gap:2px; opacity:0; transition:0.2s; z-index:20; }
         .mainBtn:hover .actionGroup, .nameBtn:hover .actionGroup, .folderBtn:hover .actionGroup, .previewBtn:hover .actionGroup, .fullContent-wrapper:hover .actionGroup, .term-wrapper:hover .actionGroup, .term-desc:hover .actionGroup, .fullContent:hover .actionGroup { opacity:1; }
         
@@ -41,6 +41,7 @@
         .cat-item-wrapper { position: relative; margin-bottom: 12px; }
         .move-btns { display: flex; gap: 6px; padding-left: 8px; margin-top: 2px; }
         .arrowBtn { background: transparent; border: none; cursor: pointer; font-size: 16px; padding: 0 4px; color: #aaa; transition: 0.2s; }
+        .arrowBtn:hover { color: #000; }
         .folder{background:#f6f6f6; border:none; border-radius:16px; padding:14px; margin-bottom:16px; display: block; overflow: visible; position: relative;}
         textarea,input{width:100%;border:2px solid #000;border-radius:12px;padding:8px;margin-top:6px;box-sizing:border-box;font-family:inherit;font-weight:700;}
         .inlineEdit { border:2px solid #000; border-radius:8px; padding:4px; font-weight:700; width:80%; margin:0; }
@@ -96,6 +97,7 @@
     let customAreaVisible = false;
     const EMOJI_LIST = ["📝","📁","👤","💡","🔥","⭐","🔑","🌈","🛡️","🧪","📜","🗺️","🎭","💎","⌛"];
 
+    // --- 認証系 ---
     window.login = () => signInWithPopup(auth, provider).catch(err => alert(err.message));
 
     onAuthStateChanged(auth, async (user) => {
@@ -128,6 +130,7 @@
         } catch (e) { document.getElementById('header-status').innerText = "Sync Error"; }
     };
 
+    // --- ユーティリティ系 ---
     window.closeAllPickers = () => { if(activePickerId !== null) { activePickerId = null; customAreaVisible = false; window.render(); } };
     window.togglePicker = (e, id) => { e.stopPropagation(); activePickerId = (activePickerId === id) ? null : id; customAreaVisible = false; window.render(); };
     window.toggleCustomArea = () => { customAreaVisible = !customAreaVisible; window.render(); };
@@ -161,7 +164,9 @@
         window.save(); window.render();
     };
 
+    // --- メインレンダリング ---
     window.render = () => {
+        // 左側カテゴリ
         document.getElementById("catList").innerHTML = window.data.map((c, cIdx)=>`
             <div class="cat-item-wrapper">
                 <button class="mainBtn ${c.id===activeCatId?'active-cat':''}" onclick="window.selectCat(${c.id})" ondblclick="event.stopPropagation(); window.data[${cIdx}].editing=true; window.render();">
@@ -182,6 +187,7 @@
         if(cIdx === -1){ mainContainer.innerHTML="<p style='color:#ccc;text-align:center;margin-top:50px;'>カテゴリを選択または追加してください</p>"; glossaryContainer.innerHTML=""; return; }
         let cat = window.data[cIdx];
 
+        // メインエリア
         mainContainer.innerHTML = `
             <div class="active-cat-title">${cat.name}</div>
             <div class="panel">
@@ -190,12 +196,18 @@
             </div>
             ${cat.folders.map((f, fIdx)=>`
                 <div class="folder">
-                    <button class="nameBtn" style="margin-bottom:10px;" onclick="window.data[${cIdx}].folders[${fIdx}].collapsed=!window.data[${cIdx}].folders[${fIdx}].collapsed; window.render();" ondblclick="event.stopPropagation(); window.data[${cIdx}].folders[${fIdx}].editing=true; window.render();">
-                        <span class="emoji-disp" onclick="window.togglePicker(event, ${f.id})">${f.emoji || (f.type==='char'?'👤':'📁')}</span>
-                        ${activePickerId === f.id ? window.getEmojiPickerHtml('folder', f.id) : ''}
-                        ${f.editing?`<input class="inlineEdit" value="${f.name}" onkeydown="if(event.key==='Enter'){window.data[${cIdx}].folders[${fIdx}].name=this.value; window.data[${cIdx}].folders[${fIdx}].editing=false; window.save(); window.render();}" onblur="window.data[${cIdx}].folders[${fIdx}].name=this.value; window.data[${cIdx}].folders[${fIdx}].editing=false; window.save(); window.render();" autofocus onclick="event.stopPropagation()">`:f.name}
-                        <div class="actionGroup"><div class="miniBtn" onclick="event.stopPropagation(); window.data[${cIdx}].folders.splice(${fIdx},1); window.save(); window.render();">🗑</div></div>
-                    </button>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <button class="nameBtn" style="margin-bottom:10px; flex:1;" onclick="window.data[${cIdx}].folders[${fIdx}].collapsed=!window.data[${cIdx}].folders[${fIdx}].collapsed; window.render();" ondblclick="event.stopPropagation(); window.data[${cIdx}].folders[${fIdx}].editing=true; window.render();">
+                            <span class="emoji-disp" onclick="window.togglePicker(event, ${f.id})">${f.emoji || (f.type==='char'?'👤':'📁')}</span>
+                            ${activePickerId === f.id ? window.getEmojiPickerHtml('folder', f.id) : ''}
+                            ${f.editing?`<input class="inlineEdit" value="${f.name}" onkeydown="if(event.key==='Enter'){window.data[${cIdx}].folders[${fIdx}].name=this.value; window.data[${cIdx}].folders[${fIdx}].editing=false; window.save(); window.render();}" onblur="window.data[${cIdx}].folders[${fIdx}].name=this.value; window.data[${cIdx}].folders[${fIdx}].editing=false; window.save(); window.render();" autofocus onclick="event.stopPropagation()">`:f.name}
+                            <div class="actionGroup"><div class="miniBtn" onclick="event.stopPropagation(); window.data[${cIdx}].folders.splice(${fIdx},1); window.save(); window.render();">🗑</div></div>
+                        </button>
+                        <div class="move-btns" style="margin-bottom:10px;">
+                            <button class="arrowBtn" onclick="window.moveFolder(${cIdx}, ${fIdx}, -1)" ${fIdx===0?'disabled':''}>▲</button>
+                            <button class="arrowBtn" onclick="window.moveFolder(${cIdx}, ${fIdx}, 1)" ${fIdx===cat.folders.length-1?'disabled':''}>▼</button>
+                        </div>
+                    </div>
                     <div style="display:${f.collapsed?'none':'block'};">
                         <textarea id="note-input-${f.id}" placeholder="新規メモを入力..."></textarea>
                         <button class="saveNoteBtn" onclick="const v=document.getElementById('note-input-${f.id}').value; if(v){window.data[${cIdx}].folders[${fIdx}].notes.push({id:Date.now(),text:v,open:false,editing:false}); window.save(); window.render();}">保存</button>
@@ -211,18 +223,26 @@
                     </div>
                 </div>`).join("")}`;
 
+        // 右側用語集
         if(!cat.glossary) cat.glossary = [];
         glossaryContainer.innerHTML = `<div style="font-size:20px;margin-bottom:16px;border-bottom:2px solid #eee;padding-bottom:8px;">📖 用語集</div>
             <div style="background:#eee;padding:10px;border-radius:12px;margin-bottom:16px;"><input id="new-term-name" placeholder="用語名"><textarea id="new-term-desc" placeholder="説明" style="height:50px;"></textarea><button class="addBtn" style="width:100%;margin-top:8px;" onclick="window.addGlossary(${cIdx})">追加</button></div>
             ${cat.glossary.map((t, tIdx)=>`<div class="term-wrapper"><button class="termBtn" onclick="window.toggleGlossaryOpen(${cIdx}, ${tIdx})">${t.name}<div class="actionGroup"><div class="miniBtn" onclick="event.stopPropagation(); window.data[${cIdx}].glossary.splice(${tIdx},1); window.save(); window.render();">🗑</div></div></button>${t.open?`<div class="term-desc" onclick="window.toggleGlossaryOpen(${cIdx}, ${tIdx})">${t.desc}</div>`:''}</div>`).join("")}`;
     };
 
+    // --- ロジック関数 ---
     window.selectCat = (id) => { activeCatId = id; window.render(); };
     window.toggleAddItem = (id) => { addingItemFolderId = (addingItemFolderId === id ? null : id); window.render(); };
-    
-    // 表示切替ロジックの修正
     window.toggleItemOpen = (cIdx, fIdx, iIdx) => { window.data[cIdx].folders[fIdx].items[iIdx].open = !window.data[cIdx].folders[fIdx].items[iIdx].open; window.render(); };
     window.toggleGlossaryOpen = (cIdx, tIdx) => { window.data[cIdx].glossary[tIdx].open = !window.data[cIdx].glossary[tIdx].open; window.render(); };
+
+    window.moveFolder = (cIdx, fIdx, direction) => {
+        const folders = window.data[cIdx].folders;
+        const targetIdx = fIdx + direction;
+        if (targetIdx < 0 || targetIdx >= folders.length) return;
+        [folders[fIdx], folders[targetIdx]] = [folders[targetIdx], folders[fIdx]];
+        window.save(); window.render();
+    };
 
     window.saveCharItem = (cIdx, fIdx, fId) => {
         const n = document.getElementById(`new-name-${fId}`).value;
