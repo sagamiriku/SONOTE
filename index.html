@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link href="https://fonts.googleapis.com/css2?family=Sawarabi+Gothic:wght@700&family=Jost:wght@900&display=swap" rel="stylesheet">
     <style>
-        /* スタイル維持・微調整 */
+        /* 基本スタイル */
         body{margin:0;font-family:"Sawarabi Gothic";font-weight:700;background:#fff;overflow:hidden;}
         header { font-family: "Jost"; font-size: 34px; padding: 12px 24px; border-bottom: 1px solid #eee; background: #fff; display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
         .header-left { display: flex; align-items: baseline; gap: 10px; }
@@ -31,19 +31,15 @@
         .emoji-picker { position: absolute; top: 40px; left: 0; background: #fff; border: 2px solid #000; border-radius: 12px; padding: 8px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         .emoji-item { cursor: pointer; font-size: 18px; text-align: center; padding: 4px; border-radius: 6px; }
         .actionGroup { position:absolute; top: 2px; right: 2px; display:flex; flex-direction:row; gap:2px; opacity:0; transition:0.2s; z-index:20; }
-        .mainBtn:hover .actionGroup, .nameBtn:hover .actionGroup, .boxBtn:hover .actionGroup, .previewBtn:hover .actionGroup, .fullContent-wrapper:hover .actionGroup, .term-wrapper:hover .actionGroup, .term-desc:hover .actionGroup { opacity:1; }
+        .mainBtn:hover .actionGroup, .nameBtn:hover .actionGroup, .boxBtn:hover .actionGroup, .previewBtn:hover .actionGroup { opacity:1; }
         .miniBtn { padding:2px 6px; border:2px solid #000; background:#fff; border-radius:6px; font-size:12px; cursor:pointer; line-height:1.2; color: #000; }
         .active-cat { background: #f6f6f6 !important; border-color: #000; }
-        .arrowBtn { background: transparent; border: none; cursor: pointer; font-size: 16px; padding: 0 4px; color: #aaa; transition: 0.2s; }
-        .arrowBtn:hover { color: #000; }
         .folder{background:#f6f6f6; border:none; border-radius:16px; padding:14px; margin-bottom:16px; display: block; overflow: visible; position: relative;}
         textarea,input{width:100%;border:2px solid #000;border-radius:12px;padding:8px;margin-top:6px;box-sizing:border-box;font-family:inherit;font-weight:700;}
+        .inlineEdit { border:2px solid #000; border-radius:8px; padding:4px; font-weight:700; width:80%; margin:0; }
         .fullContent { font-size:14px; white-space:pre-wrap; border-left: 4px solid #000; padding: 4px 34px 4px 16px; cursor: pointer; min-height:1.2em; position:relative;}
         .previewBtn { width:100%; margin-top:4px; padding:8px 34px 8px 12px; font-size:13px; border:none; text-align: left;}
-        .term-wrapper { margin-bottom: 12px; border-bottom: 1px solid #f0f0f0; padding-bottom: 8px; position: relative; }
-        .term-desc { font-size: 14px; white-space: pre-wrap; border-left: 4px solid #000; padding: 4px 34px 4px 16px; margin: 4px 0 0 0; cursor: pointer; line-height: 1.4; color: #444; word-break: break-all; min-height: 1.2em; position: relative;}
-        /* 移動用セレクター */
-        .move-selector { background:#fff; border:2px solid #000; border-radius:12px; padding:10px; margin:8px 0; font-size:13px; }
+        .move-selector { background:#fff; border:2px solid #000; border-radius:12px; padding:10px; margin:8px 0; font-size:13px; color: #000; }
     </style>
 </head>
 <body onclick="window.closeAllPickers()">
@@ -86,10 +82,9 @@
 
     window.data = [];
     let activeCatId = null;
-    let addingItemFolderId = null;
     let activePickerId = null;
-    let customAreaVisible = false;
-    let movingFolderId = null; // 移動中のフォルダID
+    let movingFolderId = null;
+    const EMOJI_LIST = ["📝","📁","👤","💡","🔥","⭐","🔑","🌈","🛡️","🧪","📜","🗺️","🎭","💎","⌛","📦"];
 
     window.login = () => signInWithPopup(auth, provider).catch(err => alert(err.message));
     window.logout = () => signOut(auth).then(() => { location.reload(); });
@@ -101,9 +96,8 @@
             onSnapshot(docRef, (docSnap) => {
                 if (docSnap.exists()) {
                     const cloudData = docSnap.data().sonoteData;
-                    if (cloudData && cloudData.length > 0 && JSON.stringify(window.data) !== JSON.stringify(cloudData)) {
-                        window.data = cloudData;
-                        window.render();
+                    if (cloudData && JSON.stringify(window.data) !== JSON.stringify(cloudData)) {
+                        window.data = cloudData; window.render();
                         document.getElementById('header-status').innerText = "Cloud";
                     }
                 }
@@ -124,40 +118,52 @@
         } catch (e) { document.getElementById('header-status').innerText = "Sync Error"; }
     };
 
-    window.closeAllPickers = () => { activePickerId = null; customAreaVisible = false; window.render(); };
+    window.closeAllPickers = () => { activePickerId = null; window.render(); };
     window.togglePicker = (e, id) => { e.stopPropagation(); activePickerId = (activePickerId === id) ? null : id; window.render(); };
 
-    // フォルダHTML生成
-    window.getFolderHtml = (f, fIdx, listRefPath, isInsideBox) => {
-        const listStr = listRefPath;
+    // 絵文字セット用ヘルパー
+    window.setEmoji = (id, emoji) => {
+        const findAndSet = (list) => {
+            for(let item of list){
+                if(item.id === id){ item.emoji = emoji; return true; }
+                if(item.boxes && findAndSet(item.boxes)) return true;
+                if(item.folders && findAndSet(item.folders)) return true;
+            }
+        };
+        findAndSet(window.data); window.save(); activePickerId = null; window.render();
+    };
+
+    window.getPicker = (id) => `
+        <div class="emoji-picker" onclick="event.stopPropagation()">
+            ${EMOJI_LIST.map(e => `<div class="emoji-item" onclick="window.setEmoji(${id}, '${e}')">${e}</div>`).join("")}
+        </div>`;
+
+    // フォルダ・キャラHTML生成
+    window.getFolderHtml = (f, fIdx, listStr, isInsideBox) => {
         const catIdx = window.data.findIndex(c => c.id === activeCatId);
         return `
         <div class="folder">
             <div style="display:flex; align-items:center; gap:8px;">
                 <button class="nameBtn" style="flex:1;" onclick="${listStr}[${fIdx}].collapsed=!${listStr}[${fIdx}].collapsed; window.render();" ondblclick="event.stopPropagation(); ${listStr}[${fIdx}].editing=true; window.render();">
                     <span class="emoji-disp" onclick="window.togglePicker(event, ${f.id})">${f.emoji || (f.type==='char'?'👤':'📁')}</span>
-                    ${activePickerId === f.id ? `
-                        <div class="emoji-picker" onclick="event.stopPropagation()">
-                            ${["📝","📁","👤","💡","🔥","⭐","🔑","🌈","🛡️","🧪","📦"].map(e => `<div class="emoji-item" onclick="const target=window.data.find(c=>c.id===${activeCatId}); (function findAndSet(l){for(let i of l){if(i.id===${f.id}){i.emoji='${e}';return true;}if(i.folders && findAndSet(i.folders)) return true; if(i.boxes && findAndSet(i.boxes)) return true;}})(window.data); window.save(); window.render();">${e}</div>`).join("")}
-                        </div>` : ''}
-                    ${f.editing?`<input class="inlineEdit" value="${f.name}" onblur="${listStr}[${fIdx}].name=this.value; ${listStr}[${fIdx}].editing=false; window.save(); window.render();" autofocus>`:f.name}
+                    ${activePickerId === f.id ? window.getPicker(f.id) : ''}
+                    ${f.editing?`<input class="inlineEdit" value="${f.name}" onblur="${listStr}[${fIdx}].name=this.value; ${listStr}[${fIdx}].editing=false; window.save(); window.render();" autofocus onclick="event.stopPropagation()">`:f.name}
                     <div class="actionGroup">
-                        ${!isInsideBox ? `<div class="miniBtn" onclick="event.stopPropagation(); window.toggleMoveMode(${f.id})">🚚</div>` : ''}
+                        ${!isInsideBox ? `<div class="miniBtn" onclick="event.stopPropagation(); movingFolderId=${f.id}; window.render();">🚚</div>` : ''}
                         <div class="miniBtn" onclick="event.stopPropagation(); ${listStr}.splice(${fIdx},1); window.save(); window.render();">🗑</div>
                     </div>
                 </button>
             </div>
             ${movingFolderId === f.id ? `
                 <div class="move-selector">
-                    移動先を選択:
-                    ${window.data[catIdx].boxes.map((b, bIdx) => `<button class="miniBtn" style="margin-left:5px;" onclick="window.moveFolderToBox(${fIdx}, ${bIdx})">${b.name}</button>`).join("")}
-                    <button class="miniBtn" style="background:#eee;" onclick="window.toggleMoveMode(null)">取消</button>
+                    移動先: ${window.data[catIdx].boxes.map((b, bIdx) => `<button class="miniBtn" style="margin-left:5px;" onclick="const folder=window.data[${catIdx}].folders.splice(${fIdx},1)[0]; window.data[${catIdx}].boxes[${bIdx}].folders.push(folder); movingFolderId=null; window.save(); window.render();">${b.name}</button>`).join("")}
+                    <button class="miniBtn" style="background:#eee;" onclick="movingFolderId=null; window.render();">取消</button>
                 </div>` : ''}
             <div style="display:${f.collapsed?'none':'block'}; margin-top:10px;">
-                <textarea id="note-in-${f.id}" placeholder="メモ..."></textarea>
-                <button class="saveNoteBtn" onclick="const v=document.getElementById('note-in-${f.id}').value; if(v){${listStr}[${fIdx}].notes.push({id:Date.now(),text:v,open:false}); window.save(); window.render();}">保存</button>
+                <textarea id="ni-${f.id}" placeholder="メモ..."></textarea>
+                <button class="saveNoteBtn" onclick="const v=document.getElementById('ni-${f.id}').value; if(v){${listStr}[${fIdx}].notes.push({id:Date.now(),text:v}); window.save(); window.render();}">保存</button>
                 <div style="margin-top:8px;">${f.notes.map((n, nIdx)=>`
-                    <div class="fullContent-wrapper" style="position:relative; margin-bottom:5px;">
+                    <div style="position:relative; margin-bottom:5px;">
                         ${n.editing ? `<textarea onblur="${listStr}[${fIdx}].notes[${nIdx}].editing=false; ${listStr}[${fIdx}].notes[${nIdx}].text=this.value; window.save(); window.render();" autofocus>${n.text}</textarea>` :
                         (!n.open?`<button class="previewBtn" onclick="${listStr}[${fIdx}].notes[${nIdx}].open=true; window.render();">${n.text.slice(0,30)}...</button>`:`<div class="fullContent" onclick="${listStr}[${fIdx}].notes[${nIdx}].open=false; window.render();">${n.text}</div>`)}
                         <div class="actionGroup"><div class="miniBtn" onclick="${listStr}[${fIdx}].notes.splice(${nIdx},1); window.save(); window.render();">🗑</div><div class="miniBtn" onclick="${listStr}[${fIdx}].notes[${nIdx}].editing=true; window.render();">✏️</div></div>
@@ -166,75 +172,55 @@
         </div>`;
     };
 
-    window.toggleMoveMode = (id) => { movingFolderId = id; window.render(); };
-
-    window.moveFolderToBox = (folderIdx, boxIdx) => {
-        const catIdx = window.data.findIndex(c => c.id === activeCatId);
-        const folder = window.data[catIdx].folders.splice(folderIdx, 1)[0];
-        window.data[catIdx].boxes[boxIdx].folders.push(folder);
-        movingFolderId = null;
-        window.save();
-        window.render();
-    };
-
     window.render = () => {
         const catListDiv = document.getElementById("catList");
         catListDiv.innerHTML = window.data.map((c, cIdx)=>`
             <div class="cat-item-wrapper">
-                <button class="mainBtn ${c.id===activeCatId?'active-cat':''}" onclick="window.selectCat(${c.id})">
-                    <span>${c.emoji || '📝'} ${c.name}</span>
+                <button class="mainBtn ${c.id===activeCatId?'active-cat':''}" onclick="activeCatId=${c.id}; window.render();" ondblclick="window.data[${cIdx}].editing=true; window.render();">
+                    <span class="emoji-disp" onclick="window.togglePicker(event, ${c.id})">${c.emoji || '📝'}</span>
+                    ${activePickerId === c.id ? window.getPicker(c.id) : ''}
+                    ${c.editing?`<input class="inlineEdit" value="${c.name}" onblur="window.data[${cIdx}].name=this.value; window.data[${cIdx}].editing=false; window.save(); window.render();" autofocus onclick="event.stopPropagation()">`:c.name}
                     <div class="actionGroup"><div class="miniBtn" onclick="window.data.splice(${cIdx},1); window.save(); window.render();">🗑</div></div>
                 </button>
             </div>`).join("");
 
-        const mainContainer = document.getElementById("main");
-        const glossaryContainer = document.getElementById("glossary");
+        const main = document.getElementById("main");
         const cIdx = window.data.findIndex(c => c.id === activeCatId);
-        if(cIdx === -1){ mainContainer.innerHTML="<p style='color:#ccc;text-align:center;'>カテゴリを選択</p>"; return; }
-        
+        if(cIdx === -1){ main.innerHTML="カテゴリを選択"; return; }
         const cat = window.data[cIdx];
-        if(!cat.boxes) cat.boxes = [];
-        if(!cat.folders) cat.folders = [];
+        if(!cat.boxes) cat.boxes = []; if(!cat.folders) cat.folders = [];
 
-        mainContainer.innerHTML = `
+        main.innerHTML = `
             <div class="active-cat-title">${cat.name}</div>
             <div class="panel">
-                <button class="addBtn" onclick="window.data[${cIdx}].boxes.push({id:Date.now(),name:'新規BOX',folders:[]}); window.save(); window.render();">＋BOX</button>
-                <button class="addBtn" onclick="window.data[${cIdx}].folders.push({id:Date.now(),type:'char',name:'キャラ',notes:[],items:[]}); window.save(); window.render();">＋キャラ</button>
-                <button class="addBtn" onclick="window.data[${cIdx}].folders.push({id:Date.now(),type:'folder',name:'フォルダ',notes:[],items:[]}); window.save(); window.render();">＋フォルダ</button>
+                <button class="addBtn" onclick="window.data[${cIdx}].boxes.push({id:Date.now(),name:'新規BOX',emoji:'📦',folders:[]}); window.save(); window.render();">＋BOX</button>
+                <button class="addBtn" onclick="window.data[${cIdx}].folders.push({id:Date.now(),type:'char',name:'キャラ',emoji:'👤',notes:[]}); window.save(); window.render();">＋キャラ</button>
+                <button class="addBtn" onclick="window.data[${cIdx}].folders.push({id:Date.now(),type:'folder',name:'フォルダ',emoji:'📁',notes:[]}); window.save(); window.render();">＋フォルダ</button>
             </div>
             ${cat.boxes.map((b, bIdx)=>`
                 <div class="box-container">
-                    <button class="boxBtn" onclick="window.data[${cIdx}].boxes[${bIdx}].collapsed=!window.data[${cIdx}].boxes[${bIdx}].collapsed; window.render();">
-                        📦 ${b.name}
-                        <div class="actionGroup"><div class="miniBtn" onclick="window.data[${cIdx}].boxes.splice(${bIdx},1); window.save(); window.render();">🗑</div></div>
+                    <button class="boxBtn" onclick="window.data[${cIdx}].boxes[${bIdx}].collapsed=!window.data[${cIdx}].boxes[${bIdx}].collapsed; window.render();" ondblclick="event.stopPropagation(); window.data[${cIdx}].boxes[${bIdx}].editing=true; window.render();">
+                        <span class="emoji-disp" onclick="window.togglePicker(event, ${b.id})">${b.emoji || '📦'}</span>
+                        ${activePickerId === b.id ? window.getPicker(b.id) : ''}
+                        ${b.editing?`<input class="inlineEdit" style="color:#000" value="${b.name}" onblur="window.data[${cIdx}].boxes[${bIdx}].name=this.value; window.data[${cIdx}].boxes[${bIdx}].editing=false; window.save(); window.render();" autofocus onclick="event.stopPropagation()">`:b.name}
+                        <div class="actionGroup"><div class="miniBtn" onclick="event.stopPropagation(); window.data[${cIdx}].boxes.splice(${bIdx},1); window.save(); window.render();">🗑</div></div>
                     </button>
                     <div style="display:${b.collapsed?'none':'block'};">
+                        <div class="panel" style="background:#f9f9f9;"><button class="addBtn" onclick="window.data[${cIdx}].boxes[${bIdx}].folders.push({id:Date.now(),type:'char',name:'内キャラ',emoji:'👤',notes:[]}); window.save(); window.render();">＋内キャラ</button></div>
                         ${b.folders.map((f, fIdx) => window.getFolderHtml(f, fIdx, `window.data[${cIdx}].boxes[${bIdx}].folders`, true)).join("")}
                     </div>
-                </div>
-            `).join("")}
+                </div>`).join("")}
             ${cat.folders.map((f, fIdx)=> window.getFolderHtml(f, fIdx, `window.data[${cIdx}].folders`, false)).join("")}`;
 
         // 用語集
+        const right = document.getElementById("glossary");
         if(!cat.glossary) cat.glossary = [];
-        glossaryContainer.innerHTML = `<div>📖 用語集</div>
-            <input id="gt-n" placeholder="用語名"><textarea id="gt-d" placeholder="説明"></textarea>
-            <button class="addBtn" style="width:100%" onclick="window.addG(${cIdx})">追加</button>
-            ${cat.glossary.map((t, tIdx)=>`
-            <div class="term-wrapper">
-                <button class="termBtn" style="width:100%" onclick="window.data[${cIdx}].glossary[${tIdx}].open=!window.data[${cIdx}].glossary[${tIdx}].open; window.render();">${t.name}</button>
-                ${t.open ? `<div class="term-desc">${t.desc}<div class="actionGroup"><div class="miniBtn" onclick="window.data[${cIdx}].glossary[${tIdx}].editing=true; window.render();">✏️</div></div></div>` : ''}
-            </div>`).join("")}`;
+        right.innerHTML = `<div>📖 用語集</div>
+            <input id="gt-n" placeholder="名"><textarea id="gt-d" placeholder="説"></textarea><button class="addBtn" onclick="const n=document.getElementById('gt-n').value; if(n){window.data[${cIdx}].glossary.push({id:Date.now(),name:n,desc:document.getElementById('gt-d').value}); window.save(); window.render();}">追加</button>
+            ${cat.glossary.map((t, tIdx)=>`<div class="term-wrapper"><button class="termBtn" style="width:100%" onclick="window.data[${cIdx}].glossary[${tIdx}].open=!window.data[${cIdx}].glossary[${tIdx}].open; window.render();">${t.name}</button>${t.open ? `<div class="term-desc">${t.desc}</div>` : ''}</div>`).join("")}`;
     };
 
-    window.addCategory = () => { window.data.push({id:Date.now(),name:"新規",folders:[],boxes:[],glossary:[]}); window.save(); window.render(); };
-    window.selectCat = (id) => { activeCatId = id; window.render(); };
-    window.addG = (cIdx) => {
-        const n = document.getElementById('gt-n').value;
-        const d = document.getElementById('gt-d').value;
-        if(n){ window.data[cIdx].glossary.push({id:Date.now(),name:n,desc:d,open:false}); window.save(); window.render(); }
-    };
+    window.addCategory = () => { window.data.push({id:Date.now(),name:"新規",emoji:"📝",folders:[],boxes:[],glossary:[]}); window.save(); window.render(); };
 </script>
 </body>
 </html>
